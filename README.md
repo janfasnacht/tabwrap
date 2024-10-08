@@ -26,6 +26,7 @@ python compile_table.py --input <input file/folder>
 - `--show-filename`: Show the original `.tex` filename as a header in the PDF, centered at the top of the page and formatted using `\texttt`. (Off by default)
 - `--keep-tex`: Keep the generated `_compiled.tex` files (by default, they are deleted after compilation).
 - `--png`: Output a (cropped to content) PNG image of the table instead of a PDF. (Off by default)
+- `--combine-pdf`: Combine all PDFs into a single file with a table of contents, bookmarks, and filenames as headers. (Off by default)
 
 ## Example Commands
 
