@@ -25,6 +25,7 @@ python compile_table.py --input <input file/folder>
 - `--no-rescale`: Disable table rescaling (by default, tables are resized to fit the page width while maintaining aspect ratio).
 - `--show-filename`: Show the original `.tex` filename as a header in the PDF, centered at the top of the page and formatted using `\texttt`. (Off by default)
 - `--keep-tex`: Keep the generated `_compiled.tex` files (by default, they are deleted after compilation).
+- `--png`: Output a (cropped to content) PNG image of the table instead of a PDF. (Off by default)
 
 ## Example Commands
 
@@ -48,11 +49,17 @@ python compile_table.py --input <input file/folder>
     python compile_table.py --input /path/to/your/file.tex --output /path/to/save/location
     ```
 
+5. **Compile and convert the table to a PNG image with no suffix**:
+    ```bash
+    python compile_table.py --input /path/to/your/file.tex --png --suffix ""
+    ```
+
 ## Requirements
 
 - Python 3.x
 - Poetry (for dependency management)
 - `pdflatex` installed on your system
+
 
 ## Installation
 
