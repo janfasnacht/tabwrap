@@ -58,7 +58,6 @@ COMBINED_TEX_TEMPLATE = r"""
 
 
 def detect_packages(tex_content):
-    # ... [previous detect_packages function remains unchanged]
     packages = set()
     if "\\toprule" in tex_content or "\\midrule" in tex_content or "\\bottomrule" in tex_content:
         packages.add(r"\usepackage{booktabs}")
