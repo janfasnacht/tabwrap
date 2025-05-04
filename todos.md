@@ -2,3 +2,7 @@
 2. For the webapi, support drag and drop of `.tex` files, but also just a text area where the user can paste their LaTeX content [single file only basically].
 3. For webapi, can have two columns (boxes) side by side, one for the input and one for the output. And the input is a "either or" situation, either drag and drop or paste/write. And the ouptut is at the beginning empty, and then shows some cool loading animation while the compilation is happening, and then shows the output, and the download as PDF (or PNG) button.
 4. And below there are "basic" options, and "advanced" options. As slider/clicker/well made. Or below are instructions and in the input there are the options? We'll see.
+
+
+Fun:
+1. A counter that says how many tables have been compiled with this tool.
