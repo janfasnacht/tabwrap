@@ -5,6 +5,7 @@ from flask_cors import CORS
 from pathlib import Path
 from werkzeug.utils import secure_filename
 from datetime import datetime
+import os
 
 from .core import TexCompiler, CompilerMode
 from .utils.validation import FileValidationError, is_valid_tabular_content
@@ -75,6 +76,9 @@ def compile_table():
     if not allowed_file(file.filename):
         return jsonify({'error': 'Invalid file type'}), 400
 
+    input_path = None
+    content = ""
+
     try:
         # Create compiler instance in web mode
         with TexCompiler(mode=CompilerMode.WEB) as compiler:
@@ -82,16 +86,39 @@ def compile_table():
             if not compiler.temp_dir:
                 return jsonify({'error': 'Failed to create temporary directory'}), 500
 
-            # Save uploaded file
-            filename = secure_filename(file.filename)
-            input_path = compiler.temp_dir / filename
-            file.save(input_path)
-            logger.debug(f"File received: {filename}")
-            logger.info(f"Saved file to: {input_path}")
+            # Option A: File upload
+            if 'file' in request.files:
+                file = request.files['file']
+                if file.filename == '':
+                    return jsonify({'error': 'No selected file'}), 400
+                if not allowed_file(file.filename):
+                    return jsonify({'error': 'Invalid file type'}), 400
+
+                filename = secure_filename(file.filename)
+                input_path = compiler.temp_dir / filename
+                file.save(input_path)
+                logger.debug(f"File received: {filename}")
+                logger.info(f"Saved file to: {input_path}")
+
+                with open(input_path, 'r') as f:
+                    content = f.read()
+
+            # Option B: Raw pasted text
+            elif 'text' in request.form:
+                text = request.form['text']
+                if not text.strip():
+                    return jsonify({'error': 'Empty text input'}), 400
+                filename = "pasted_input.tex"
+                input_path = compiler.temp_dir / filename
+                with open(input_path, 'w') as f:
+                    f.write(text)
+                content = text
+                logger.info(f"Saved pasted text to: {input_path}")
+
+            else:
+                return jsonify({'error': 'No input provided (file or text)'}), 400
 
             # Validate content
-            with open(input_path, 'r') as f:
-                content = f.read()
             is_valid, error = is_valid_tabular_content(content)
             if not is_valid:
                 return jsonify({'error': f'Invalid table content: {error}'}), 400

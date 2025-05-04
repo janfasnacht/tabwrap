@@ -15,7 +15,7 @@ from .utils.validation import (
     is_valid_tabular_content,
     FileValidationError
 )
-from .utils.file_handling import create_temp_dir, clean_up, ensure_dir_exists
+from .utils.file_handling import create_temp_dir, clean_up
 from .utils.image_processing import convert_pdf_to_cropped_png
 from .utils.logging import setup_logging
 logger = setup_logging(module_name=__name__)
@@ -348,4 +348,3 @@ class TexCompiler:
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit."""
         self._cleanup()
-    
