@@ -56,6 +56,15 @@ temp/
 tmp/
 .pytest_cache/
 
+# Development notes and scratch work
+docs/notes/
+docs/scratch/
+docs/planning/
+docs/conversations/
+*.draft.md
+*.wip.md
+*.temp.md
+
 # Output files (for testing)
 *_compiled.pdf
 *_compiled.png
