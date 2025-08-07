@@ -46,16 +46,19 @@ class TexCompiler:
         show_filename: bool = False,
         keep_tex: bool = False,
         png: bool = False,
-        combine_pdf: bool = False
+        combine_pdf: bool = False,
+        recursive: bool = False
     ) -> Path:
         """Compile TeX table(s) to PDF or PNG."""
         try:
             # Validate input
             input_path = Path(input_path)
             if input_path.is_dir():
-                tex_files = list(input_path.glob("*.tex"))
+                pattern = "**/*.tex" if recursive else "*.tex"
+                tex_files = list(input_path.glob(pattern))
                 if not tex_files:
-                    raise FileValidationError(f"No .tex files found in {input_path}")
+                    search_type = "recursively" if recursive else ""
+                    raise FileValidationError(f"No .tex files found {search_type} in {input_path}")
                 for tex_file in tex_files:
                     validate_tex_file(tex_file)
             else:
@@ -86,7 +89,11 @@ class TexCompiler:
             if combine_pdf and not png and len(output_paths) > 1:
                 return self._combine_pdfs(output_paths, output_dir)
 
-            # Return the file path
+            # Return the first output path (for single files) or first path (for multiple without combine)
+            if output_paths:
+                return output_paths[0]
+            
+            # Fallback - should not happen if we have validated files
             output_dir.mkdir(parents=True, exist_ok=True)
             extension = '.png' if png else '.pdf'
             return output_dir / f"{input_path.stem}{suffix}{extension}"
@@ -96,10 +103,11 @@ class TexCompiler:
             self._cleanup()
             raise
 
-    def _get_tex_files(self, input_path: Path) -> List[Path]:
+    def _get_tex_files(self, input_path: Path, recursive: bool = False) -> List[Path]:
         """Get list of .tex files to process."""
         if input_path.is_dir():
-            return list(input_path.glob("*.tex"))
+            pattern = "**/*.tex" if recursive else "*.tex"
+            return list(input_path.glob(pattern))
         return [input_path]
 
     def _process_single_file(

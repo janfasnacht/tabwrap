@@ -4,6 +4,7 @@
 import pytest
 from pathlib import Path
 from tex_compiler.core import TexCompiler
+from tex_compiler.utils.validation import FileValidationError
 
 
 @pytest.fixture
@@ -56,3 +57,68 @@ def test_invalid_file():
             input_path="nonexistent.tex",
             output_dir="."
         )
+
+
+def test_recursive_compilation(temp_dir):
+    # Create directory structure with tex files
+    subdir = temp_dir / "subdir"
+    subdir.mkdir()
+    
+    # Create tex file in subdirectory
+    content = r"""
+    \begin{tabular}{lcr}
+    \toprule
+    Nested Table & Column 2 & Column 3 \\
+    \midrule
+    1 & 2 & 3 \\
+    \bottomrule
+    \end{tabular}
+    """
+    tex_file = subdir / "nested_table.tex"
+    tex_file.write_text(content)
+    
+    # Test recursive compilation
+    compiler = TexCompiler()
+    output = compiler.compile_tex(
+        input_path=temp_dir,
+        output_dir=temp_dir,
+        recursive=True
+    )
+    assert output.exists()
+
+
+def test_non_recursive_vs_recursive(temp_dir):
+    # Create directory structure
+    subdir = temp_dir / "subdir"
+    subdir.mkdir()
+    
+    # Create tex file only in subdirectory
+    content = r"""
+    \begin{tabular}{lcr}
+    \toprule
+    Nested Table & Column 2 & Column 3 \\
+    \midrule
+    1 & 2 & 3 \\
+    \bottomrule
+    \end{tabular}
+    """
+    tex_file = subdir / "nested_table.tex"
+    tex_file.write_text(content)
+    
+    compiler = TexCompiler()
+    
+    # Non-recursive should fail (no .tex files in root)
+    with pytest.raises(FileValidationError, match="No .tex files found"):
+        compiler.compile_tex(
+            input_path=temp_dir,
+            output_dir=temp_dir,
+            recursive=False
+        )
+    
+    # Recursive should succeed
+    output = compiler.compile_tex(
+        input_path=temp_dir,
+        output_dir=temp_dir,
+        recursive=True
+    )
+    assert output.exists()

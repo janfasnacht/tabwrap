@@ -41,7 +41,8 @@ def parse_options(form_data: dict) -> dict:
         'show_filename': form_data.get('show_filename', 'false').lower() == 'true',
         'keep_tex': False,  # Always false in web mode
         'png': form_data.get('png', 'false').lower() == 'true',
-        'combine_pdf': form_data.get('combine_pdf', 'false').lower() == 'true'
+        'combine_pdf': form_data.get('combine_pdf', 'false').lower() == 'true',
+        'recursive': False  # Not applicable for web API single file uploads
     }
 
 

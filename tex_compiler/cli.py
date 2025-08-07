@@ -57,6 +57,11 @@ from .core import TexCompiler, CompilerMode
     is_flag=True,
     help="Combine all PDFs into a single PDF with ToC (default is separate PDFs)."
 )
+@click.option(
+    '--recursive',
+    is_flag=True,
+    help="Recursively search for .tex files in subdirectories when input is a folder."
+)
 def compile_tex_cli(
     input: str,
     output: str,
@@ -67,7 +72,8 @@ def compile_tex_cli(
     show_filename: bool,
     keep_tex: bool,
     png: bool,
-    combine_pdf: bool
+    combine_pdf: bool,
+    recursive: bool
 ) -> None:
     """Compile LaTeX tables to PDF/PNG with automatic formatting."""
     try:
@@ -82,7 +88,8 @@ def compile_tex_cli(
                 show_filename=show_filename,
                 keep_tex=keep_tex,
                 png=png,
-                combine_pdf=combine_pdf
+                combine_pdf=combine_pdf,
+                recursive=recursive
             )
             click.echo(f"Output saved to {output_path}")
     except Exception as e:

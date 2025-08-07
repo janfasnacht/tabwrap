@@ -82,3 +82,86 @@ Table {i} & Column 2 & Column 3 \\\\
         test_logger.error(f"Exception: {result.exception}")
     assert result.exit_code == 0
     assert (tmp_path / "tex_tables_combined.pdf").exists()
+
+
+def test_recursive_directory_input(runner, tmp_path, test_logger):
+    # Create directory structure with tex files in subdirectories
+    subdir1 = tmp_path / "subdir1"
+    subdir2 = tmp_path / "subdir2"
+    subdir1.mkdir()
+    subdir2.mkdir()
+    
+    # Create tex files in root
+    tex_content = r"""
+\begin{tabular}{lcr}
+\toprule
+Root Table & Column 2 & Column 3 \\
+\midrule
+1 & 2 & 3 \\
+\bottomrule
+\end{tabular}
+"""
+    (tmp_path / "root_table.tex").write_text(tex_content)
+    
+    # Create tex files in subdirectories
+    for i, subdir in enumerate([subdir1, subdir2], 1):
+        tex_content = f"""
+\\begin{{tabular}}{{lcr}}
+\\toprule
+Subdir {i} & Column 2 & Column 3 \\\\
+\\midrule
+{i} & {i+1} & {i+2} \\\\
+\\bottomrule
+\\end{{tabular}}
+"""
+        (subdir / f"subdir{i}_table.tex").write_text(tex_content)
+        test_logger.info(f"Created test file: {subdir / f'subdir{i}_table.tex'}")
+
+    # Test recursive compilation
+    result = runner.invoke(compile_tex_cli, [
+        '--input', str(tmp_path),
+        '--output', str(tmp_path),
+        '--recursive',
+        '--combine-pdf'
+    ])
+    if result.exit_code != 0:
+        test_logger.error(f"Command failed with output: {result.output}")
+        test_logger.error(f"Exception: {result.exception}")
+    assert result.exit_code == 0
+    assert (tmp_path / "tex_tables_combined.pdf").exists()
+
+
+def test_recursive_vs_non_recursive(runner, tmp_path, test_logger):
+    # Create directory structure
+    subdir = tmp_path / "subdir"
+    subdir.mkdir()
+    
+    # Create tex file only in subdirectory
+    tex_content = r"""
+\begin{tabular}{lcr}
+\toprule
+Nested Table & Column 2 & Column 3 \\
+\midrule
+1 & 2 & 3 \\
+\bottomrule
+\end{tabular}
+"""
+    (subdir / "nested_table.tex").write_text(tex_content)
+    
+    # Test non-recursive - should find no files
+    result = runner.invoke(compile_tex_cli, [
+        '--input', str(tmp_path),
+        '--output', str(tmp_path)
+    ])
+    assert result.exit_code != 0  # Should fail - no .tex files found
+    
+    # Test recursive - should find the nested file
+    result = runner.invoke(compile_tex_cli, [
+        '--input', str(tmp_path),
+        '--output', str(tmp_path),
+        '--recursive'
+    ])
+    if result.exit_code != 0:
+        test_logger.error(f"Recursive command failed with output: {result.output}")
+        test_logger.error(f"Exception: {result.exception}")
+    assert result.exit_code == 0
