@@ -1,13 +1,15 @@
 # tex_compiler/utils/validation.py
 import os
 from pathlib import Path
-from typing import Union, Tuple
+
 
 class FileValidationError(Exception):
     """Custom exception for file validation errors."""
+
     pass
 
-def validate_tex_file(file_path: Union[str, Path]) -> Path:
+
+def validate_tex_file(file_path: str | Path) -> Path:
     """Validate a TeX file exists and has correct format."""
     path = Path(file_path)
 
@@ -15,13 +17,13 @@ def validate_tex_file(file_path: Union[str, Path]) -> Path:
         raise FileValidationError(f"File not found: {path}")
     if not path.is_file():
         raise FileValidationError(f"Not a file: {path}")
-    if path.suffix.lower() != '.tex':
+    if path.suffix.lower() != ".tex":
         raise FileValidationError(f"Not a TeX file: {path}")
     if path.stat().st_size == 0:
         raise FileValidationError(f"Empty file: {path}")
 
     try:
-        with open(path, 'r', encoding='utf-8') as f:
+        with open(path, encoding="utf-8") as f:
             content = f.read()
             if not content.strip():
                 raise FileValidationError(f"File contains no content: {path}")
@@ -30,7 +32,8 @@ def validate_tex_file(file_path: Union[str, Path]) -> Path:
 
     return path
 
-def validate_output_dir(dir_path: Union[str, Path]) -> Path:
+
+def validate_output_dir(dir_path: str | Path) -> Path:
     """Validate output directory exists or can be created."""
     path = Path(dir_path)
 
@@ -46,29 +49,30 @@ def validate_output_dir(dir_path: Union[str, Path]) -> Path:
 
     return path
 
-def is_valid_tabular_content(content: str) -> Tuple[bool, str]:
+
+def is_valid_tabular_content(content: str) -> tuple[bool, str]:
     """Check if content appears to be a valid LaTeX tabular environment."""
     if not content.strip():
         return False, "Empty content"
 
     # Check which tabular environments are present
-    has_tabular = '\\begin{tabular}' in content
-    has_tabularx = '\\begin{tabularx}' in content
-    
+    has_tabular = "\\begin{tabular}" in content
+    has_tabularx = "\\begin{tabularx}" in content
+
     if not (has_tabular or has_tabularx):
         return False, "No tabular environment found"
 
     # Validate environment matching for each type that's present
     if has_tabular:
-        if content.count('\\begin{tabular}') != content.count('\\end{tabular}'):
+        if content.count("\\begin{tabular}") != content.count("\\end{tabular}"):
             return False, "Mismatched tabular environment tags"
-    
+
     if has_tabularx:
-        if content.count('\\begin{tabularx}') != content.count('\\end{tabularx}'):
+        if content.count("\\begin{tabularx}") != content.count("\\end{tabularx}"):
             return False, "Mismatched tabularx environment tags"
 
     # Check for column specification
-    if '{@' not in content and '{|' not in content and '{l' not in content and '{c' not in content and '{r' not in content:
+    if "{@" not in content and "{|" not in content and "{l" not in content and "{c" not in content and "{r" not in content:
         return False, "Missing or invalid column specification"
 
     return True, ""

@@ -2,21 +2,17 @@
 import logging
 import subprocess
 from pathlib import Path
-from typing import Optional
+
+import fitz  # PyMuPDF
 import numpy as np
 from PIL import Image
-import fitz  # PyMuPDF
 
 logger = logging.getLogger(__name__)
 
 
 def convert_pdf_to_cropped_png(
-    pdf_path: Path,
-    output_dir: Path,
-    suffix: str = "",
-    dpi: int = 300,
-    padding: int = 10
-) -> Optional[Path]:
+    pdf_path: Path, output_dir: Path, suffix: str = "", dpi: int = 300, padding: int = 10
+) -> Path | None:
     """Convert PDF to cropped PNG with white space removal."""
     try:
         base_name = pdf_path.stem
@@ -31,13 +27,11 @@ def convert_pdf_to_cropped_png(
         page = doc.load_page(0)
         logger.info("PDF opened successfully")
 
-        matrix = fitz.Matrix(dpi/72, dpi/72)
+        matrix = fitz.Matrix(dpi / 72, dpi / 72)
         pix = page.get_pixmap(matrix=matrix)
         logger.info("Page rendered to pixmap")
 
-        img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(
-            pix.height, pix.width, pix.n
-        )
+        img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, pix.n)
         logger.info(f"Image array shape: {img.shape}")
         logger.info(f"Saving PNG to: {png_path}")
 
@@ -68,11 +62,7 @@ def convert_pdf_to_cropped_png(
         return None
 
 
-def convert_pdf_to_svg(
-    pdf_path: Path,
-    output_dir: Path,
-    suffix: str = ""
-) -> Optional[Path]:
+def convert_pdf_to_svg(pdf_path: Path, output_dir: Path, suffix: str = "") -> Path | None:
     """Convert PDF to SVG using pdf2svg."""
     try:
         base_name = pdf_path.stem
@@ -85,18 +75,14 @@ def convert_pdf_to_svg(
 
         # Check if pdf2svg is available
         try:
-            subprocess.run(['pdf2svg', '--help'], 
-                          capture_output=True)
+            subprocess.run(["pdf2svg", "--help"], capture_output=True)
         except FileNotFoundError:
             raise RuntimeError(
-                "pdf2svg not found. Install with: brew install pdf2svg (macOS) "
-                "or sudo apt-get install pdf2svg (Ubuntu)"
+                "pdf2svg not found. Install with: brew install pdf2svg (macOS) or sudo apt-get install pdf2svg (Ubuntu)"
             )
 
         # Convert PDF to SVG (first page only)
-        result = subprocess.run([
-            'pdf2svg', str(pdf_path), str(svg_path), '1'
-        ], capture_output=True, text=True, check=True)
+        subprocess.run(["pdf2svg", str(pdf_path), str(svg_path), "1"], capture_output=True, text=True, check=True)
 
         if svg_path.exists():
             logger.info(f"SVG saved successfully: {svg_path}")

@@ -4,11 +4,7 @@ import sys
 from pathlib import Path
 
 
-def setup_logging(
-    level: str = "INFO",
-    log_file: Path | None = None,
-    module_name: str = "tex_compiler"
-) -> logging.Logger:
+def setup_logging(level: str = "INFO", log_file: Path | None = None, module_name: str = "tex_compiler") -> logging.Logger:
     """
     Configure logging for the application.
 
@@ -25,12 +21,8 @@ def setup_logging(
     logger.setLevel(getattr(logging, level.upper()))
 
     # Create formatters
-    detailed_formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
-    simple_formatter = logging.Formatter(
-        '%(levelname)s - %(message)s'
-    )
+    detailed_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    simple_formatter = logging.Formatter("%(levelname)s - %(message)s")
 
     # Console handler
     console_handler = logging.StreamHandler(sys.stdout)

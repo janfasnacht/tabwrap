@@ -1,9 +1,6 @@
 # tex_compiler/utils/latex_templates.py
 """LaTeX templates for document generation."""
 
-from pathlib import Path
-from typing import Set
-
 
 class TexTemplates:
     """Collection of LaTeX templates and document structures."""

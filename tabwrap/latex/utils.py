@@ -1,14 +1,12 @@
 # tex_compiler/utils/latex.py
 
-from .templates import TexTemplates
 from pathlib import Path
-from typing import Set
 
 
-def detect_packages(tex_content: str) -> Set[str]:
+def detect_packages(tex_content: str) -> set[str]:
     """
     Detect required LaTeX packages based on content analysis.
-    
+
     Uses pattern matching to identify commands that require specific packages.
     This provides automatic package inclusion for common LaTeX table patterns.
 
@@ -28,17 +26,14 @@ def detect_packages(tex_content: str) -> Set[str]:
         (["\\longtable", "\\begin{longtable}"], "longtable"),
         (["\\multirow"], "multirow"),
         (["\\multicolumn"], "multicol"),
-        
         # Math and symbols
         (["\\SI", "\\num"], "siunitx"),
         (["\\checkmark"], "amssymb"),
         (["\\mathbb"], "amsfonts"),
         (["\\boldsymbol"], "amsmath"),
-        
         # Graphics and color
         (["\\includegraphics"], "graphicx"),
         (["\\textcolor", "\\color"], "xcolor"),
-        
         # Special characters and fonts
         (["\\texttt"], ""),  # Built-in, no package needed
         (["\\url"], "url"),
@@ -63,9 +58,9 @@ def clean_filename_for_display(filename: str) -> str:
         LaTeX-safe filename string
     """
     # Remove _compiled suffix if present
-    clean_name = filename.replace('_compiled', '')
+    clean_name = filename.replace("_compiled", "")
     # Escape underscores for LaTeX
-    return clean_name.replace('_', r'\_')
+    return clean_name.replace("_", r"\_")
 
 
 def create_include_command(pdf_file: Path, display_name: str, page_number: int) -> list[str]:
@@ -82,8 +77,11 @@ def create_include_command(pdf_file: Path, display_name: str, page_number: int) 
     """
     return [
         r"\phantomsection",
-        r"\setCurrentSection{{\texttt{{{0}}}}}".format(display_name),
-        r"\addcontentsline{{toc}}{{section}}{{\texttt{{{0}}}}}".format(display_name),
-        r"\includepdf[pages=-,pagecommand={\thispagestyle{fancy}\setcounter{page}{" +
-        str(page_number) + r"}},offset=0 -1cm]{" + str(pdf_file) + "}"
+        rf"\setCurrentSection{{\texttt{{{display_name}}}}}",
+        rf"\addcontentsline{{toc}}{{section}}{{\texttt{{{display_name}}}}}",
+        r"\includepdf[pages=-,pagecommand={\thispagestyle{fancy}\setcounter{page}{"
+        + str(page_number)
+        + r"}},offset=0 -1cm]{"
+        + str(pdf_file)
+        + "}",
     ]

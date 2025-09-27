@@ -1,32 +1,28 @@
 # tabwrap/api.py
 try:
-    from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Depends
-    from fastapi.responses import FileResponse
+    from fastapi import FastAPI, File, Form, HTTPException, UploadFile
     from fastapi.middleware.cors import CORSMiddleware
+    from fastapi.responses import FileResponse
     from pydantic import BaseModel, Field
 except ImportError as e:
-    raise ImportError(
-        "API dependencies not installed. Install with: pip install tabwrap[api]"
-    ) from e
+    raise ImportError("API dependencies not installed. Install with: pip install tabwrap[api]") from e
 
-from pathlib import Path
-from datetime import datetime
 import tempfile
-from typing import Optional
+from datetime import datetime
+from pathlib import Path
 
-from .core import TabWrap, CompilerMode
-from .latex import FileValidationError, is_valid_tabular_content
 from .config import setup_logging
+from .core import CompilerMode, TabWrap
+from .latex import FileValidationError, is_valid_tabular_content
 
-logger = setup_logging(
-    module_name=__name__,
-    log_file=Path("logs") / f"api_{datetime.now():%Y%m%d}.log"
-)
+logger = setup_logging(module_name=__name__, log_file=Path("logs") / f"api_{datetime.now():%Y%m%d}.log")
+
 
 # Pydantic Models
 class HealthResponse(BaseModel):
     status: str = "healthy"
     version: str = "1.0.0"
+
 
 class CompileOptions(BaseModel):
     packages: str = Field("", description="Comma-separated LaTeX packages")
@@ -38,8 +34,10 @@ class CompileOptions(BaseModel):
     parallel: bool = Field(False, description="Use parallel processing for faster compilation")
     max_workers: int = Field(None, description="Maximum number of parallel workers")
 
+
 class ErrorResponse(BaseModel):
     detail: str
+
 
 def create_app():
     """Create FastAPI application."""
@@ -50,7 +48,7 @@ def create_app():
         docs_url="/api/docs",
         redoc_url="/api/redoc",
     )
-    
+
     # Add CORS middleware
     app.add_middleware(
         CORSMiddleware,
@@ -59,12 +57,12 @@ def create_app():
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    
+
     @app.get("/api/health", response_model=HealthResponse, tags=["Health"])
     async def health_check():
         """Health check endpoint."""
         return HealthResponse()
-    
+
     @app.post(
         "/api/compile",
         response_class=FileResponse,
@@ -72,8 +70,8 @@ def create_app():
         responses={
             200: {"description": "Compiled file", "content": {"application/pdf": {}, "image/png": {}, "image/svg+xml": {}}},
             400: {"model": ErrorResponse, "description": "Bad Request - Invalid input"},
-            500: {"model": ErrorResponse, "description": "Internal Server Error - Compilation failed"}
-        }
+            500: {"model": ErrorResponse, "description": "Internal Server Error - Compilation failed"},
+        },
     )
     async def compile_table(
         file: UploadFile = File(..., description="LaTeX table file (.tex)"),
@@ -88,41 +86,41 @@ def create_app():
     ):
         """
         Compile LaTeX table fragment to PDF, PNG, or SVG.
-        
+
         Upload a .tex file containing a LaTeX table fragment (like \\begin{tabular}...\\end{tabular})
         and get back a compiled PDF, PNG, or SVG file.
-        
+
         The system automatically detects required LaTeX packages and handles compilation.
         """
         try:
             # Validate file type
-            if not file.filename or not file.filename.endswith('.tex'):
+            if not file.filename or not file.filename.endswith(".tex"):
                 raise HTTPException(status_code=400, detail="Invalid file. Only .tex files are allowed.")
-            
+
             # Validate mutually exclusive options
             if png and svg:
                 raise HTTPException(status_code=400, detail="Cannot specify both PNG and SVG output formats.")
-            
+
             # Read file content
             content = await file.read()
             try:
-                content_str = content.decode('utf-8')
+                content_str = content.decode("utf-8")
             except UnicodeDecodeError:
                 raise HTTPException(status_code=400, detail="File must be valid UTF-8 encoded text.")
-            
+
             # Validate LaTeX content
             if not is_valid_tabular_content(content_str):
                 raise HTTPException(status_code=400, detail="Invalid LaTeX content. Must contain tabular environment.")
-            
+
             # Create temporary directory
             temp_dir = Path(tempfile.mkdtemp())
-            
+
             try:
                 # Save uploaded file
                 input_path = temp_dir / file.filename
-                with open(input_path, 'w', encoding='utf-8') as f:
+                with open(input_path, "w", encoding="utf-8") as f:
                     f.write(content_str)
-                
+
                 # Compile with TabWrap
                 with TabWrap(mode=CompilerMode.WEB) as compiler:
                     try:
@@ -137,37 +135,33 @@ def create_app():
                             svg=svg,
                             keep_tex=False,
                             parallel=parallel,
-                            max_workers=max_workers
+                            max_workers=max_workers,
                         )
                     except FileValidationError as e:
                         raise HTTPException(status_code=400, detail=f"Invalid file content: {str(e)}")
                     except RuntimeError as e:
                         # Check if it's a validation error
                         error_msg = str(e)
-                        if any(phrase in error_msg for phrase in ['Invalid tabular content', 'No tabular environment found']):
+                        if any(phrase in error_msg for phrase in ["Invalid tabular content", "No tabular environment found"]):
                             raise HTTPException(status_code=400, detail=f"Invalid LaTeX content: {error_msg}")
                         else:
                             raise HTTPException(status_code=500, detail=f"Compilation failed: {error_msg}")
-                
+
                 # Determine content type and filename
                 stem = Path(file.filename).stem
                 if svg:
-                    media_type = 'image/svg+xml'
+                    media_type = "image/svg+xml"
                     filename = f"{stem}_compiled.svg"
                 elif png:
-                    media_type = 'image/png'
+                    media_type = "image/png"
                     filename = f"{stem}_compiled.png"
                 else:
-                    media_type = 'application/pdf'
+                    media_type = "application/pdf"
                     filename = f"{stem}_compiled.pdf"
-                
+
                 # Return file
-                return FileResponse(
-                    path=str(output_path),
-                    media_type=media_type,
-                    filename=filename
-                )
-                
+                return FileResponse(path=str(output_path), media_type=media_type, filename=filename)
+
             except HTTPException:
                 # Re-raise HTTP exceptions as-is
                 raise
@@ -177,19 +171,21 @@ def create_app():
             finally:
                 # Cleanup is handled by TabWrap context manager
                 pass
-                
+
         except HTTPException:
             # Re-raise HTTP exceptions as-is
             raise
         except Exception as e:
             logger.error(f"API error: {e}")
             raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
-    
+
     return app
+
 
 # Create app instance
 app = create_app()
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
