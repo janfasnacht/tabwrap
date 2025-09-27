@@ -136,9 +136,9 @@ Options:
 For programmatic access:
 
 ```python
-from tabwrap import TexCompiler
+from tabwrap import TabWrap
 
-compiler = TexCompiler()
+compiler = TabWrap()
 result = compiler.compile_tex(
     input_path="table.tex",
     output_dir="output/",

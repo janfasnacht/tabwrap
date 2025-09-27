@@ -3,7 +3,7 @@
 
 import pytest
 from pathlib import Path
-from tabwrap.core import TexCompiler
+from tabwrap.core import TabWrap
 from tabwrap.latex import FileValidationError
 
 
@@ -30,7 +30,7 @@ def sample_tex_file(temp_dir):
 
 
 def test_basic_compilation(temp_dir, sample_tex_file):
-    compiler = TexCompiler()
+    compiler = TabWrap()
     output = compiler.compile_tex(
         input_path=sample_tex_file,
         output_dir=temp_dir
@@ -40,7 +40,7 @@ def test_basic_compilation(temp_dir, sample_tex_file):
 
 
 def test_png_output(temp_dir, sample_tex_file):
-    compiler = TexCompiler()
+    compiler = TabWrap()
     output = compiler.compile_tex(
         input_path=sample_tex_file,
         output_dir=temp_dir,
@@ -51,7 +51,7 @@ def test_png_output(temp_dir, sample_tex_file):
 
 
 def test_invalid_file():
-    compiler = TexCompiler()
+    compiler = TabWrap()
     with pytest.raises(FileValidationError):
         compiler.compile_tex(
             input_path="nonexistent.tex",
@@ -78,7 +78,7 @@ def test_recursive_compilation(temp_dir):
     tex_file.write_text(content)
     
     # Test recursive compilation
-    compiler = TexCompiler()
+    compiler = TabWrap()
     output = compiler.compile_tex(
         input_path=temp_dir,
         output_dir=temp_dir,
@@ -105,7 +105,7 @@ def test_non_recursive_vs_recursive(temp_dir):
     tex_file = subdir / "nested_table.tex"
     tex_file.write_text(content)
     
-    compiler = TexCompiler()
+    compiler = TabWrap()
     
     # Non-recursive should fail (no .tex files in root)
     with pytest.raises(FileValidationError, match="No .tex files found"):

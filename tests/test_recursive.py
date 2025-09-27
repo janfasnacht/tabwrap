@@ -1,7 +1,7 @@
 # tests/test_recursive.py
 import pytest
 from pathlib import Path
-from tabwrap.core import TexCompiler, CompilerMode
+from tabwrap.core import TabWrap, CompilerMode
 
 
 def test_recursive_finds_nested_files(tmp_path):
@@ -29,7 +29,7 @@ Test & Value & Result \\
     (tmp_path / "subdir2" / "nested2.tex").write_text(tex_content)
     
     # Compile with recursive
-    compiler = TexCompiler(mode=CompilerMode.CLI)
+    compiler = TabWrap(mode=CompilerMode.CLI)
     output_path = compiler.compile_tex(
         input_path=tmp_path,
         output_dir=tmp_path,
@@ -68,7 +68,7 @@ Test & Value & Result \\
     (tmp_path / "subdir" / "nested.tex").write_text(tex_content)
     
     # Compile without recursive
-    compiler = TexCompiler(mode=CompilerMode.CLI)
+    compiler = TabWrap(mode=CompilerMode.CLI)
     output_path = compiler.compile_tex(
         input_path=tmp_path,
         output_dir=tmp_path,

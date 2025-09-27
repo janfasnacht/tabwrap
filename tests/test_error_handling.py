@@ -5,7 +5,7 @@ import pytest
 from click.testing import CliRunner
 from pathlib import Path
 from tabwrap.cli import main
-from tabwrap.core import TexCompiler, CompilerMode
+from tabwrap.core import TabWrap, CompilerMode
 from tabwrap.latex import FileValidationError
 
 
@@ -165,8 +165,8 @@ Column 1 & Column 2 & Column 3 \\
 
 def test_web_mode_vs_cli_mode():
     """Test differences between web and CLI modes."""
-    compiler_cli = TexCompiler(CompilerMode.CLI)
-    compiler_web = TexCompiler(CompilerMode.WEB)
+    compiler_cli = TabWrap(CompilerMode.CLI)
+    compiler_web = TabWrap(CompilerMode.WEB)
     
     assert compiler_cli.mode == CompilerMode.CLI
     assert compiler_web.mode == CompilerMode.WEB

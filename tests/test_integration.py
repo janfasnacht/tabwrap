@@ -1,5 +1,5 @@
 # tests/test_integration.py
-from tabwrap.core import TexCompiler
+from tabwrap.core import TabWrap
 
 def test_complex_table(tmp_path):
     content = r"""
@@ -23,7 +23,7 @@ def test_complex_table(tmp_path):
     tex_file = tmp_path / "complex_table.tex"
     tex_file.write_text(content)
 
-    compiler = TexCompiler()
+    compiler = TabWrap()
     output = compiler.compile_tex(
         input_path=tex_file,
         output_dir=tmp_path

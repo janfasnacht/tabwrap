@@ -31,8 +31,8 @@ class CompilerMode(Enum):
     WEB = "web"
 
 
-class TexCompiler:
-    """Core TeX compiler functionality."""
+class TabWrap:
+    """Core table compilation and processing functionality."""
 
     def __init__(self, mode: CompilerMode = CompilerMode.CLI):
         self.mode = mode

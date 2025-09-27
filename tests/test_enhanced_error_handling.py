@@ -7,7 +7,7 @@ from unittest.mock import patch, MagicMock
 from click.testing import CliRunner
 
 from tabwrap.cli import main
-from tabwrap.core import TexCompiler, CompilerMode
+from tabwrap.core import TabWrap, CompilerMode
 from tabwrap.latex import (
     check_latex_dependencies,
     format_dependency_report,
@@ -56,7 +56,7 @@ def test_dependency_report_formatting():
 
 def test_compiler_dependency_check():
     """Test compiler dependency checking."""
-    compiler = TexCompiler()
+    compiler = TabWrap()
     
     # Mock missing pdflatex
     with patch('tabwrap.core.check_latex_dependencies') as mock_check:
@@ -71,7 +71,7 @@ def test_compiler_dependency_check():
 
 def test_compiler_dependency_check_png():
     """Test compiler dependency checking for PNG output."""
-    compiler = TexCompiler()
+    compiler = TabWrap()
     
     # Mock missing convert for PNG
     with patch('tabwrap.core.check_latex_dependencies') as mock_check:

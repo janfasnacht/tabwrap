@@ -1,7 +1,7 @@
 # tabwrap/cli.py
 import click
 from pathlib import Path
-from .core import TexCompiler, CompilerMode
+from .core import TabWrap, CompilerMode
 
 
 @click.command()
@@ -95,7 +95,7 @@ def main(
         click.echo("Warning: --combine-pdf ignored when using --png or --svg output", err=True)
     
     try:
-        with TexCompiler(mode=CompilerMode.CLI) as compiler:
+        with TabWrap(mode=CompilerMode.CLI) as compiler:
             output_path = compiler.compile_tex(
                 input_path=input_path,
                 output_dir=output,
