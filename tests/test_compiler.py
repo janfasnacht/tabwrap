@@ -3,8 +3,8 @@
 
 import pytest
 from pathlib import Path
-from tex_compiler.core import TexCompiler
-from tex_compiler.utils.validation import FileValidationError
+from tabwrap.core import TexCompiler
+from tabwrap.utils.validation import FileValidationError
 
 
 @pytest.fixture

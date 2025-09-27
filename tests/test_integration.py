@@ -1,6 +1,7 @@
 # tests/test_integration.py
+from tabwrap.core import TexCompiler
 
-def test_complex_table(temp_dir):
+def test_complex_table(tmp_path):
     content = r"""
     \begin{tabular}{@{}l*{3}{c}@{}}
     \toprule
@@ -19,13 +20,13 @@ def test_complex_table(temp_dir):
     \bottomrule
     \end{tabular}
     """
-    tex_file = temp_dir / "complex_table.tex"
+    tex_file = tmp_path / "complex_table.tex"
     tex_file.write_text(content)
 
     compiler = TexCompiler()
     output = compiler.compile_tex(
         input_path=tex_file,
-        output_dir=temp_dir
+        output_dir=tmp_path
     )
     assert output.exists()
-    assert (temp_dir / "complex_table_compiled.pdf").exists()
+    assert (tmp_path / "complex_table_compiled.pdf").exists()

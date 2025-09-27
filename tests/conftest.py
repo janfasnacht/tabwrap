@@ -2,7 +2,7 @@
 import pytest
 from click.testing import CliRunner
 from pathlib import Path
-from tex_compiler.utils.logging import setup_logging
+from tabwrap.utils.logging import setup_logging
 
 @pytest.fixture
 def runner():
@@ -10,7 +10,7 @@ def runner():
 
 @pytest.fixture
 def test_logger():
-    return setup_logging(level="DEBUG", module_name="tex_compiler.test")
+    return setup_logging(level="DEBUG", module_name="tabwrap.test")
 
 @pytest.fixture
 def sample_tex(tmp_path):

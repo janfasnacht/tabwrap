@@ -2,7 +2,7 @@
 import pytest
 from click.testing import CliRunner
 from pathlib import Path
-from tex_compiler.cli import compile_tex_cli
+from tabwrap.cli import main
 
 @pytest.fixture
 def runner():
@@ -26,7 +26,7 @@ Column 1 & Column 2 & Column 3 \\
 
 
 def test_basic_compilation(runner, sample_tex, tmp_path):
-    result = runner.invoke(compile_tex_cli, [
+    result = runner.invoke(main, [
         '--input', str(sample_tex),
         '--output', str(tmp_path)
     ])
@@ -34,7 +34,7 @@ def test_basic_compilation(runner, sample_tex, tmp_path):
     assert (tmp_path / "test_table_compiled.pdf").exists()
 
 def test_png_output(runner, sample_tex, tmp_path):
-    result = runner.invoke(compile_tex_cli, [
+    result = runner.invoke(main, [
         '--input', str(sample_tex),
         '--output', str(tmp_path),
         '--png'
@@ -44,7 +44,7 @@ def test_png_output(runner, sample_tex, tmp_path):
 
 
 def test_landscape_mode(runner, sample_tex, tmp_path, test_logger):
-    result = runner.invoke(compile_tex_cli, [
+    result = runner.invoke(main, [
         '--input', str(sample_tex),
         '--output', str(tmp_path),
         '--landscape'
@@ -72,7 +72,7 @@ Table {i} & Column 2 & Column 3 \\\\
         file_path.write_text(tex_content)
         test_logger.info(f"Created test file: {file_path}")
 
-    result = runner.invoke(compile_tex_cli, [
+    result = runner.invoke(main, [
         '--input', str(tmp_path),
         '--output', str(tmp_path),
         '--combine-pdf'
@@ -118,7 +118,7 @@ Subdir {i} & Column 2 & Column 3 \\\\
         test_logger.info(f"Created test file: {subdir / f'subdir{i}_table.tex'}")
 
     # Test recursive compilation
-    result = runner.invoke(compile_tex_cli, [
+    result = runner.invoke(main, [
         '--input', str(tmp_path),
         '--output', str(tmp_path),
         '--recursive',
@@ -149,14 +149,14 @@ Nested Table & Column 2 & Column 3 \\
     (subdir / "nested_table.tex").write_text(tex_content)
     
     # Test non-recursive - should find no files
-    result = runner.invoke(compile_tex_cli, [
+    result = runner.invoke(main, [
         '--input', str(tmp_path),
         '--output', str(tmp_path)
     ])
     assert result.exit_code != 0  # Should fail - no .tex files found
     
     # Test recursive - should find the nested file
-    result = runner.invoke(compile_tex_cli, [
+    result = runner.invoke(main, [
         '--input', str(tmp_path),
         '--output', str(tmp_path),
         '--recursive'

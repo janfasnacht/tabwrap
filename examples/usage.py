@@ -20,36 +20,36 @@ Column 1 & Column 2 & Column 3 \\
 \end{tabular}
 
 Command:
-python -m tex_compiler.cli --input tex_table.tex
+tabwrap --input tex_table.tex
 """
 
 # Convert to PNG with custom output directory
 """
 Command:
-python -m tex_compiler.cli --input tex_table.tex --output ./output --png
+tabwrap --input tex_table.tex --output ./output --png
 """
 
 # Process all tables in a directory and combine
 """
 Command:
-python -m tex_compiler.cli --input ./tables --output ./output --combine-pdf
+tabwrap --input ./tables --output ./output --combine-pdf
 """
 
 # Landscape mode with filename display
 """
 Command:
-python -m tex_compiler.cli --input tex_table.tex --landscape --show-filename
+tabwrap --input tex_table.tex --landscape --show-filename
 """
 
 # Keep intermediate files and use custom packages
 """
 Command:
-python -m tex_compiler.cli --input tex_table.tex --keep-tex --packages "array,multirow"
+tabwrap --input tex_table.tex --keep-tex --packages "array,multirow"
 """
 
 # Programmatic usage
 """
-from tex_compiler.core import TexCompiler, CompilerMode
+from tabwrap.core import TexCompiler, CompilerMode
 
 # Basic usage
 compiler = TexCompiler(mode=CompilerMode.CLI)

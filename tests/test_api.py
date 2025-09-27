@@ -1,7 +1,7 @@
 # tests/test_api.py
 import pytest
 from pathlib import Path
-from tex_compiler.api import create_app
+from tabwrap.api import create_app
 
 
 @pytest.fixture

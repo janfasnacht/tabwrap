@@ -5,7 +5,7 @@ import tempfile
 import os
 from werkzeug.utils import secure_filename
 from click.testing import CliRunner
-from compile_table import compile_tex
+from .cli import main
 import logging
 
 # Configure logging
@@ -16,7 +16,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Configuration
-UPLOAD_FOLDER = tempfile.mkdtemp(prefix='tex_compiler_')
+UPLOAD_FOLDER = tempfile.mkdtemp(prefix='tabwrap_')
 os.chmod(UPLOAD_FOLDER, 0o755)
 ALLOWED_EXTENSIONS = {'tex'}
 
@@ -77,7 +77,7 @@ def health_check():
 
 
 @app.route('/api/compile', methods=['POST'])
-def compile_table():
+def compile_tex():
     """Endpoint to compile TeX tables."""
     if not os.access(UPLOAD_FOLDER, os.W_OK):
         return jsonify({'error': 'Upload folder is not writable'}), 500
@@ -104,7 +104,7 @@ def compile_table():
 
         # Run compilation
         runner = CliRunner()
-        result = runner.invoke(compile_tex, args)
+        result = runner.invoke(main, args)
 
         if result.exit_code != 0:
             logger.error(f"Compilation failed: {result.output}")

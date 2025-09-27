@@ -2,7 +2,7 @@
 
 import pytest
 from pathlib import Path
-from tex_compiler.utils.validation import is_valid_tabular_content
+from tabwrap.utils.validation import is_valid_tabular_content
 
 
 def test_valid_tabular():

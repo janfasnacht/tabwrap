@@ -1,4 +1,4 @@
-# tex_compiler/api.py
+# tabwrap/api.py
 from flask import Flask, request, send_file, jsonify, send_from_directory
 from flask_swagger_ui import get_swaggerui_blueprint
 from flask_cors import CORS
@@ -53,7 +53,7 @@ def health_check():
 
 
 @app.route('/api/compile', methods=['POST'])
-def compile_table():
+def compile_tex():
     """
     Compile TeX table endpoint.
 

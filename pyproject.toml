@@ -1,12 +1,15 @@
 [tool.poetry]
-name = "tex_table_compiler"
+name = "tabwrap"
 version = "0.1.0"
-description = ""
+description = "Wrap LaTeX table fragments into complete documents for research workflows"
 authors = ["janfasnacht <jan.fasnacht@gmail.com>"]
 readme = "README.md"
 packages = [
-    { include = "tex_compiler" }
+    { include = "tabwrap" }
 ]
+
+[tool.poetry.scripts]
+tabwrap = "tabwrap.cli:main"
 
 [tool.poetry.dependencies]
 python = "^3.12"
@@ -14,9 +17,11 @@ click = "^8.1.7"
 pymupdf = "^1.24.11"
 numpy = "^2.1.2"
 pillow = "^10.4.0"
+pytest = "^8.3.4"
+
+[tool.poetry.group.api.dependencies]
 flask = "^3.1.0"
 flask-cors = "^5.0.0"
-pytest = "^8.3.4"
 flask-swagger-ui = "^4.11.1"
 
 

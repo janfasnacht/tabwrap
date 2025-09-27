@@ -1,21 +1,50 @@
-# LaTeX Table Compiler
+# tabwrap
 
-This Python tool simplifies compiling `.tex` files (especially tabular content) into PDFs, helping researchers quickly inspect, share, and explore tables from research projects. The tool automatically adds LaTeX structure, resizes tables to fit the page, and offers features like filename headers to streamline table processing and visualization.
+**Wrap LaTeX table fragments into complete documents for research workflows**
 
-## Motivation
+A Python tool that transforms statistical programming output (LaTeX table fragments) into publication-ready PDFs and PNGs. Perfect for researchers who need to quickly inspect, share, and explore tables from Stata, R, Python, and other statistical tools.
 
-In research, generating `.tex` files from statistical outputs (e.g., regression results) is common. However, these files often lack the preambles required for direct PDF compilation. This tool automates adding the necessary LaTeX structure, providing a fast way to compile, inspect, and share tables for exploratory analysis, without needing a full LaTeX setup.
+## What it does
 
-
-## Features and Usage
-
-To use the tool, navigate to the project folder and run:
-
-```bash
-python compile_table.py --input <input file/folder>
+`tabwrap` takes incomplete LaTeX table fragments like this:
+```latex
+\begin{tabular}{lcr}
+\toprule
+Variable & Coefficient & P-value \\
+\midrule
+Intercept & 1.23 & 0.045 \\
+\bottomrule
+\end{tabular}
 ```
 
-### Options:
+And automatically wraps them into complete, compilable LaTeX documents with:
+- Auto-detected packages (booktabs, array, etc.)
+- Proper document structure and preambles  
+- Smart table resizing to fit pages
+- Optional landscape orientation, PNG output, filename headers
+- Batch processing and PDF combination
+
+## Installation & Usage
+
+```bash
+pip install tabwrap
+tabwrap --input <file_or_folder>
+```
+
+### Basic Examples
+
+```bash
+# Compile a single table
+tabwrap --input regression_table.tex
+
+# Process all tables in a folder
+tabwrap --input ./results_tables/
+
+# Output PNG with landscape orientation
+tabwrap --input table.tex --png --landscape
+```
+
+### All Options:
 
 - `--input`: Path to a `.tex` file or a folder containing `.tex` files. (Default is the current folder)
 - `--output`: Directory to save compiled PDFs. (Default is `~/Downloads`)
@@ -28,50 +57,50 @@ python compile_table.py --input <input file/folder>
 - `--png`: Output a (cropped to content) PNG image of the table instead of a PDF. (Off by default)
 - `--combine-pdf`: Combine all PDFs into a single file with a table of contents, bookmarks, and filenames as headers. (Off by default)
 
-## Example Commands
+## Advanced Examples
 
-1. **Compile a `.tex` file with automatic table rescaling (default)**:
-    ```bash
-    python compile_table.py --input /path/to/your/file.tex
-    ```
+```bash
+# Recursive folder processing with combination
+tabwrap --input ./tables/ --recursive --combine-pdf
 
-2. **Compile and display the filename as a header in the PDF**:
-    ```bash
-    python compile_table.py --input /path/to/your/file.tex --show-filename
-    ```
+# Custom output location with filename headers
+tabwrap --input table.tex --output ./output/ --show-filename
 
-3. **Compile without rescaling the table**:
-    ```bash
-    python compile_table.py --input /path/to/your/file.tex --no-rescale
-    ```
+# PNG output with no file suffix
+tabwrap --input table.tex --png --suffix ""
 
-4. **Specify a custom directory to save the compiled PDF**:
-    ```bash
-    python compile_table.py --input /path/to/your/file.tex --output /path/to/save/location
-    ```
+# Keep intermediate files and add custom packages
+tabwrap --input table.tex --keep-tex --packages "array,multirow"
 
-5. **Compile and convert the table to a PNG image with no suffix**:
-    ```bash
-    python compile_table.py --input /path/to/your/file.tex --png --suffix ""
-    ```
+# Disable auto-rescaling for exact table dimensions
+tabwrap --input table.tex --no-rescale
+```
 
 ## Requirements
 
-- Python 3.x
-- Poetry (for dependency management)
-- `pdflatex` installed on your system
+- Python 3.12+
+- `pdflatex` (part of any LaTeX distribution like TeX Live, MiKTeX)
 
+## Research Workflow Integration
 
-## Installation
+**Stata**: Use `esttab` or `outreg2` to generate LaTeX fragments, then `tabwrap` for compilation
 
-To install the required dependencies, navigate to the project directory and run:
+**R**: Use `stargazer`, `xtable`, or `gt` table packages with LaTeX output
 
+**Python**: Use `pandas.to_latex()` or `statsmodels` summary tables
+
+**Example workflow**:
 ```bash
-poetry install
-```
+# Generate tables from your analysis
+stata -b do analysis.do  # Creates table1.tex, table2.tex
 
-This will ensure that all necessary Python packages are installed, and the tool is ready to use.
+# Quick inspection
+tabwrap --input ./results/ --png
+
+# Final publication version
+tabwrap --input ./results/ --combine-pdf --show-filename
+```
 
 ## License
 
-This project is currently private.
+MIT License - see [LICENSE](LICENSE) file for details.

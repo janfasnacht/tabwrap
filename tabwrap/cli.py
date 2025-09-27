@@ -1,4 +1,4 @@
-# tex_compiler/cli.py
+# tabwrap/cli.py
 import click
 from pathlib import Path
 from .core import TexCompiler, CompilerMode
@@ -62,7 +62,7 @@ from .core import TexCompiler, CompilerMode
     is_flag=True,
     help="Recursively search for .tex files in subdirectories when input is a folder."
 )
-def compile_tex_cli(
+def main(
     input: str,
     output: str,
     suffix: str,
@@ -98,4 +98,4 @@ def compile_tex_cli(
 
 
 if __name__ == '__main__':
-    compile_tex_cli()
+    main()
