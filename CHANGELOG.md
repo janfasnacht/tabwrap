@@ -7,21 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- SVG output support with `--svg` flag
-- FastAPI-based API with automatic OpenAPI documentation
-- Interactive Swagger UI at `/api/docs` and ReDoc at `/api/redoc`
-- Improved API error handling with proper HTTP status codes
-- Type-safe API endpoints with Pydantic models
-- Shell completion support for bash, zsh, and fish via `--completion` flag
-- Parallel processing support with `-j/--parallel` flag for 4-6x faster batch compilation
-- Performance benchmarking tools and stress testing capabilities
+## [1.0.1] - 2025-09-27
 
 ### Changed
-- Migrated API from Flask-RESTX to FastAPI for better maintainability
-- Simplified API testing with FastAPI TestClient
+- Updated documentation and changelog for initial release
 
-## [1.0.0] - 2025-01-XX
+## [1.0.0] - 2025-09-27
 
 ### Added
 - CLI interface with `tabwrap [input] [options]`
