@@ -61,7 +61,9 @@ class TexCompiler:
             input_path = Path(input_path)
             if input_path.is_dir():
                 pattern = "**/*.tex" if recursive else "*.tex"
-                tex_files = list(input_path.glob(pattern))
+                all_tex_files = list(input_path.glob(pattern))
+                # Filter out already compiled files (those with _compiled suffix)
+                tex_files = [f for f in all_tex_files if not f.stem.endswith(suffix)]
                 if not tex_files:
                     search_type = "recursively" if recursive else ""
                     raise FileValidationError(f"No .tex files found {search_type} in {input_path}")
@@ -179,11 +181,14 @@ class TexCompiler:
         all_packages = "\n".join(user_packages) + "\n" + "\n".join(detected_packages)
 
         # Add option-specific packages
-        if options.get('landscape'):
-            all_packages += "\n\\usepackage[landscape]{geometry}"
         if not options.get('no_rescale'):
             all_packages += "\n\\usepackage{graphicx}"
             content = r"\resizebox{\linewidth}{!}{" + content + "}"
+
+        # Add underscore package if filename contains underscores and show_filename is enabled
+        underscore_package = ""
+        if options.get('show_filename') and '_' in tex_file.name:
+            underscore_package = "\\usepackage{underscore}  % Handle underscores in filenames"
 
         # Prepare header and pagestyle
         header = ""
@@ -191,9 +196,17 @@ class TexCompiler:
             header = r"\texttt{" + clean_filename_for_display(tex_file.name) + r"}"
         pagestyle = "plain" if options.get('combine_pdf') else "empty"
 
+        # Handle geometry package options
+        geometry_options = ["margin=1cm"]
+        if options.get('landscape'):
+            geometry_options.append("landscape")
+        geometry_package = f"\\usepackage[{','.join(geometry_options)}]{{geometry}}"
+        
         # Format final document
         return TexTemplates.SINGLE_TABLE.format(
             packages=all_packages,
+            underscore=underscore_package,
+            geometry=geometry_package,
             header=header,
             content=content,
             pagestyle=pagestyle
@@ -325,7 +338,18 @@ class TexCompiler:
                     text=True
                 )
                 if result.returncode != 0:
-                    raise RuntimeError(f"Combined PDF compilation failed: {result.stderr}")
+                    # Parse LaTeX log for better error messages
+                    log_path = output_dir / "tex_tables_combined.log"
+                    if log_path.exists():
+                        log_content = log_path.read_text()
+                        errors = LaTeXErrorParser.parse_latex_log(log_content, combined_tex_path)
+                        if errors:
+                            error_report = LaTeXErrorParser.format_error_report(errors)
+                            raise RuntimeError(f"Combined PDF compilation failed:\n{error_report}")
+                    
+                    # Fallback to basic error message
+                    stderr_msg = result.stderr.strip() if result.stderr.strip() else "Unknown compilation error"
+                    raise RuntimeError(f"Combined PDF compilation failed: {stderr_msg}")
 
             combined_pdf_path = output_dir / "tex_tables_combined.pdf"
             if not combined_pdf_path.exists():
@@ -334,14 +358,15 @@ class TexCompiler:
             return combined_pdf_path
 
         finally:
-            # Clean up temporary files
-            clean_up([
-                combined_tex_path,
-                output_dir / "tex_tables_combined.aux",
-                output_dir / "tex_tables_combined.log",
-                output_dir / "tex_tables_combined.toc",
-                output_dir / "tex_tables_combined.out"
-            ])
+            # Clean up temporary files (but only if not in CLI mode with keep_tex)
+            if self.mode != CompilerMode.CLI:  # Only clean up in web mode
+                clean_up([
+                    combined_tex_path,
+                    output_dir / "tex_tables_combined.aux",
+                    output_dir / "tex_tables_combined.log",
+                    output_dir / "tex_tables_combined.toc",
+                    output_dir / "tex_tables_combined.out"
+                ])
 
     def _combine_pdfs(self, pdf_files: List[Path], output_dir: Path) -> Optional[Path]:
         """

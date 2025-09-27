@@ -11,10 +11,10 @@ class TexTemplates:
     # Template for single table compilation
     SINGLE_TABLE = r"""
     \documentclass{{article}}
-    \usepackage[margin=1cm]{{geometry}}
-    \usepackage{{underscore}}  % Handle underscores in filenames # TODO: should only be here if needed
+    {geometry}
+    {underscore}
     {packages}  % Inserted packages
-    \pagestyle{{{pagestyle}}}  % Page numbering controlled by combine_pdf option # TODO: should only be here if needed
+    \pagestyle{{{pagestyle}}}
     \begin{{document}}
     {header}
     \begin{{center}}
@@ -26,7 +26,7 @@ class TexTemplates:
     # Template for combined PDF with table of contents
     COMBINED_DOCUMENT = r"""
     \documentclass{{article}}
-    \usepackage[margin=2.5cm]{{geometry}}  # TODO: why the margin larger here? for the header?
+    \usepackage[margin=2.5cm]{{geometry}}  % Larger margin for headers/footers and TOC readability
     \usepackage{{underscore}}
     \usepackage{{pdfpages}}
     \usepackage{{hyperref}}

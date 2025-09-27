@@ -51,17 +51,23 @@ def is_valid_tabular_content(content: str) -> Tuple[bool, str]:
     if not content.strip():
         return False, "Empty content"
 
-    if not any(env in content for env in ['\\begin{tabular}', '\\begin{tabularx}']):
+    # Check which tabular environments are present
+    has_tabular = '\\begin{tabular}' in content
+    has_tabularx = '\\begin{tabularx}' in content
+    
+    if not (has_tabular or has_tabularx):
         return False, "No tabular environment found"
 
-    environments = {
-        'tabular': content.count('\\begin{tabular}') == content.count('\\end{tabular}'),
-        'tabularx': content.count('\\begin{tabularx}') == content.count('\\end{tabularx}')
-    }
+    # Validate environment matching for each type that's present
+    if has_tabular:
+        if content.count('\\begin{tabular}') != content.count('\\end{tabular}'):
+            return False, "Mismatched tabular environment tags"
+    
+    if has_tabularx:
+        if content.count('\\begin{tabularx}') != content.count('\\end{tabularx}'):
+            return False, "Mismatched tabularx environment tags"
 
-    if not any(environments.values()):
-        return False, "Mismatched tabular environment tags"
-
+    # Check for column specification
     if '{@' not in content and '{|' not in content and '{l' not in content and '{c' not in content and '{r' not in content:
         return False, "Missing or invalid column specification"
 

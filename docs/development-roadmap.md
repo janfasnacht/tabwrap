@@ -1,6 +1,4 @@
-# TODO: probably this is also too long and or unnecessary even? But okay start; let's just wait until ew get 1.0 done before we create something like this
-
-# texout Development Roadmap
+# tabwrap Development Roadmap
 
 ## Project Vision
 Transform texout into a polished, user-friendly tool for the academic community to compile LaTeX tables and research outputs efficiently.

@@ -6,9 +6,11 @@ from typing import Set
 
 
 def detect_packages(tex_content: str) -> Set[str]:
-    # TODO: generalize this more obviously
     """
-    Detect required LaTeX packages based on content.
+    Detect required LaTeX packages based on content analysis.
+    
+    Uses pattern matching to identify commands that require specific packages.
+    This provides automatic package inclusion for common LaTeX table patterns.
 
     Args:
         tex_content: The LaTeX content to analyze
@@ -18,19 +20,34 @@ def detect_packages(tex_content: str) -> Set[str]:
     """
     packages = set()
 
-    # Table-related packages
-    if any(cmd in tex_content for cmd in ["\\toprule", "\\midrule", "\\bottomrule"]):
-        packages.add(r"\usepackage{booktabs}")
-    if "\\tabularx" in tex_content:
-        packages.add(r"\usepackage{tabularx}")
-    if "\\longtable" in tex_content:
-        packages.add(r"\usepackage{longtable}")
+    # Define package detection rules: (commands, package)
+    package_rules = [
+        # Table-related packages
+        (["\\toprule", "\\midrule", "\\bottomrule"], "booktabs"),
+        (["\\tabularx", "\\begin{tabularx}"], "tabularx"),
+        (["\\longtable", "\\begin{longtable}"], "longtable"),
+        (["\\multirow"], "multirow"),
+        (["\\multicolumn"], "multicol"),
+        
+        # Math and symbols
+        (["\\SI", "\\num"], "siunitx"),
+        (["\\checkmark"], "amssymb"),
+        (["\\mathbb"], "amsfonts"),
+        (["\\boldsymbol"], "amsmath"),
+        
+        # Graphics and color
+        (["\\includegraphics"], "graphicx"),
+        (["\\textcolor", "\\color"], "xcolor"),
+        
+        # Special characters and fonts
+        (["\\texttt"], ""),  # Built-in, no package needed
+        (["\\url"], "url"),
+    ]
 
-    # Math and symbols
-    if any(cmd in tex_content for cmd in ["\\SI", "\\num"]):
-        packages.add(r"\usepackage{siunitx}")
-    if "\\checkmark" in tex_content:
-        packages.add(r"\usepackage{amssymb}")
+    # Apply detection rules
+    for commands, package in package_rules:
+        if package and any(cmd in tex_content for cmd in commands):
+            packages.add(f"\\usepackage{{{package}}}")
 
     return packages
 
