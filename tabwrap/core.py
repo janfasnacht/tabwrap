@@ -21,7 +21,7 @@ from .latex import (
     BatchCompilationResult
 )
 from .io import create_temp_dir, clean_up
-from .output import convert_pdf_to_cropped_png
+from .output import convert_pdf_to_cropped_png, convert_pdf_to_svg
 from .config import setup_logging
 logger = setup_logging(module_name=__name__)
 
@@ -67,12 +67,13 @@ class TexCompiler:
         show_filename: bool = False,
         keep_tex: bool = False,
         png: bool = False,
+        svg: bool = False,
         combine_pdf: bool = False,
         recursive: bool = False
     ) -> Path:
-        """Compile TeX table(s) to PDF or PNG."""
+        """Compile TeX table(s) to PDF, PNG, or SVG."""
         # Check dependencies first
-        self.check_dependencies(require_convert=png)
+        self.check_dependencies(require_convert=(png or svg))
         
         try:
             # Validate input
@@ -105,6 +106,7 @@ class TexCompiler:
                 show_filename=show_filename,
                 keep_tex=self.mode == CompilerMode.CLI and keep_tex,
                 png=png,
+                svg=svg,
                 combine_pdf=combine_pdf
             )
             
@@ -117,7 +119,7 @@ class TexCompiler:
             output_paths = [r.output_path for r in batch_result.successes if r.output_path]
             
             # Handle combination if needed
-            if combine_pdf and not png and len(output_paths) > 1:
+            if combine_pdf and not png and not svg and len(output_paths) > 1:
                 combined_path = self._combine_pdfs(output_paths, output_dir)
                 if batch_result.has_failures:
                     # Show warning about partial success
@@ -345,6 +347,14 @@ class TexCompiler:
                     raise RuntimeError("PNG conversion failed")
                 clean_up([pdf_path])
                 return png_path
+
+            # Convert to SVG if requested
+            if options.get('svg'):
+                svg_path = convert_pdf_to_svg(pdf_path, output_dir, suffix)
+                if not svg_path:
+                    raise RuntimeError("SVG conversion failed")
+                clean_up([pdf_path])
+                return svg_path
 
             return pdf_path
 

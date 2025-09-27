@@ -53,6 +53,11 @@ from .core import TexCompiler, CompilerMode
     help="Output PNG instead of PDF"
 )
 @click.option(
+    '--svg',
+    is_flag=True,
+    help="Output SVG instead of PDF"
+)
+@click.option(
     '-c', '--combine-pdf',
     is_flag=True,
     help="Combine multiple PDFs with table of contents"
@@ -72,6 +77,7 @@ def main(
     header: bool,
     keep_tex: bool,
     png: bool,
+    svg: bool,
     combine_pdf: bool,
     recursive: bool
 ) -> None:
@@ -81,8 +87,12 @@ def main(
     """
     
     # Validate argument combinations
-    if combine_pdf and png:
-        click.echo("Warning: --combine-pdf ignored when using --png output", err=True)
+    if png and svg:
+        click.echo("Error: Cannot specify both --png and --svg", err=True)
+        raise click.Abort()
+    
+    if combine_pdf and (png or svg):
+        click.echo("Warning: --combine-pdf ignored when using --png or --svg output", err=True)
     
     try:
         with TexCompiler(mode=CompilerMode.CLI) as compiler:
@@ -96,6 +106,7 @@ def main(
                 show_filename=header,
                 keep_tex=keep_tex,
                 png=png,
+                svg=svg,
                 combine_pdf=combine_pdf,
                 recursive=recursive
             )

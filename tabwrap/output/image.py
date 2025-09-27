@@ -1,5 +1,6 @@
 # tex_compiler/utils/image_processing.py
 import logging
+import subprocess
 from pathlib import Path
 from typing import Optional
 import numpy as np
@@ -64,4 +65,49 @@ def convert_pdf_to_cropped_png(
 
     except Exception as e:
         logger.error(f"Error converting PDF to PNG: {e}")
+        return None
+
+
+def convert_pdf_to_svg(
+    pdf_path: Path,
+    output_dir: Path,
+    suffix: str = ""
+) -> Optional[Path]:
+    """Convert PDF to SVG using pdf2svg."""
+    try:
+        base_name = pdf_path.stem
+        if suffix in base_name:
+            svg_path = output_dir / f"{base_name}.svg"
+        else:
+            svg_path = output_dir / f"{base_name}{suffix}.svg"
+
+        logger.info(f"Starting PDF to SVG conversion from: {pdf_path} to: {svg_path}")
+
+        # Check if pdf2svg is available
+        try:
+            subprocess.run(['pdf2svg', '--version'], 
+                          capture_output=True, check=True)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            raise RuntimeError(
+                "pdf2svg not found. Install with: brew install pdf2svg (macOS) "
+                "or sudo apt-get install pdf2svg (Ubuntu)"
+            )
+
+        # Convert PDF to SVG (first page only)
+        result = subprocess.run([
+            'pdf2svg', str(pdf_path), str(svg_path), '1'
+        ], capture_output=True, text=True, check=True)
+
+        if svg_path.exists():
+            logger.info(f"SVG saved successfully: {svg_path}")
+            return svg_path
+        else:
+            logger.error("SVG file was not created")
+            return None
+
+    except subprocess.CalledProcessError as e:
+        logger.error(f"pdf2svg failed: {e.stderr}")
+        return None
+    except Exception as e:
+        logger.error(f"Error converting PDF to SVG: {e}")
         return None

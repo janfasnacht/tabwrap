@@ -4,6 +4,7 @@
 import pytest
 from click.testing import CliRunner
 from pathlib import Path
+from unittest.mock import patch
 from tabwrap.cli import main
 
 
@@ -225,3 +226,91 @@ Table {i} & Column 2 & Column 3 \\\\
     assert (tmp_path / "table_1_compiled.png").exists()
     # No combined PDF in PNG mode
     assert not (tmp_path / "tex_tables_combined.pdf").exists()
+
+
+@patch('tabwrap.core.convert_pdf_to_svg')
+def test_svg_output(mock_convert_svg, runner, tmp_path):
+    """Test SVG output option."""
+    # Mock successful SVG conversion
+    svg_path = tmp_path / "test_compiled.svg"
+    mock_convert_svg.return_value = svg_path
+    
+    tex_content = """
+\\begin{tabular}{lcr}
+\\toprule
+Variable & Coefficient & P-value \\\\
+\\midrule
+Intercept & 1.23 & 0.045 \\\\
+\\bottomrule
+\\end{tabular}
+"""
+    (tmp_path / "test.tex").write_text(tex_content)
+    
+    result = runner.invoke(main, [
+        str(tmp_path / "test.tex"),
+        '-o', str(tmp_path),
+        '--svg'
+    ])
+    
+    assert result.exit_code == 0
+    mock_convert_svg.assert_called_once()
+
+
+@patch('tabwrap.core.convert_pdf_to_svg')
+def test_svg_with_combine_warning(mock_convert_svg, runner, tmp_path):
+    """Test that SVG and combine options issue warning."""
+    # Mock successful SVG conversion
+    svg_path_0 = tmp_path / "table_0_compiled.svg"
+    svg_path_1 = tmp_path / "table_1_compiled.svg"
+    mock_convert_svg.side_effect = [svg_path_0, svg_path_1]
+    
+    # Create multiple tex files
+    for i in range(2):
+        tex_content = f"""
+\\begin{{tabular}}{{lcr}}
+\\toprule
+Table {i} & Column 2 & Column 3 \\\\
+\\midrule
+1 & 2 & 3 \\\\
+\\bottomrule
+\\end{{tabular}}
+"""
+        (tmp_path / f"table_{i}.tex").write_text(tex_content)
+    
+    result = runner.invoke(main, [
+        str(tmp_path),
+        '-o', str(tmp_path),
+        '--svg',  # SVG
+        '-c'      # Combine (should warn)
+    ])
+    
+    # Should succeed but warn about combine being ignored
+    assert result.exit_code == 0
+    assert "Warning: --combine-pdf ignored when using --png or --svg output" in result.output
+    # Should call convert function for each file
+    assert mock_convert_svg.call_count == 2
+
+
+def test_svg_and_png_mutual_exclusive(runner, tmp_path):
+    """Test that SVG and PNG options are mutually exclusive."""
+    tex_content = """
+\\begin{tabular}{lcr}
+\\toprule
+Variable & Coefficient & P-value \\\\
+\\midrule
+Intercept & 1.23 & 0.045 \\\\
+\\bottomrule
+\\end{tabular}
+"""
+    (tmp_path / "test.tex").write_text(tex_content)
+    
+    result = runner.invoke(main, [
+        str(tmp_path / "test.tex"),
+        '-o', str(tmp_path),
+        '-p',     # PNG
+        '--svg'   # SVG
+    ])
+    
+    # Should fail with error
+    assert result.exit_code == 1
+    assert "Error: Cannot specify both --png and --svg" in result.output
