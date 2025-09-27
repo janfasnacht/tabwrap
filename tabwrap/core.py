@@ -19,7 +19,10 @@ from .utils.error_handling import (
     LaTeXErrorParser,
     check_latex_dependencies,
     validate_tex_content_syntax,
-    CompilationError
+    format_dependency_report,
+    CompilationError,
+    CompilationResult,
+    BatchCompilationResult
 )
 from .utils.file_handling import create_temp_dir, clean_up
 from .utils.image_processing import convert_pdf_to_cropped_png
@@ -39,6 +42,22 @@ class TexCompiler:
         self.mode = mode
         self.generated_pdfs: List[Path] = []
         self.temp_dir: Optional[Path] = None
+        
+    def check_dependencies(self, require_convert: bool = False) -> None:
+        """Check LaTeX dependencies and raise error if missing critical ones."""
+        deps = check_latex_dependencies()
+        
+        missing = []
+        if not deps['pdflatex']:
+            missing.append("pdflatex is required but not found. Install a LaTeX distribution.")
+        
+        if require_convert and not deps['convert']:
+            missing.append("ImageMagick 'convert' is required for PNG output but not found.")
+        
+        if missing:
+            error_msg = "\n".join(missing)
+            error_msg += f"\n\n{format_dependency_report(deps)}"
+            raise RuntimeError(error_msg)
 
     def compile_tex(
         self,
@@ -56,6 +75,9 @@ class TexCompiler:
         recursive: bool = False
     ) -> Path:
         """Compile TeX table(s) to PDF or PNG."""
+        # Check dependencies first
+        self.check_dependencies(require_convert=png)
+        
         try:
             # Validate input
             input_path = Path(input_path)
@@ -76,29 +98,41 @@ class TexCompiler:
             # Setup output directory
             output_dir = validate_output_dir(output_dir)
 
-            # Process files
-            output_paths = []
-            for tex_file in tex_files:
-                output_path = self._process_single_file(
-                    tex_file,
-                    output_dir,
-                    suffix=suffix,
-                    packages=packages,
-                    landscape=landscape,
-                    no_rescale=no_rescale,
-                    show_filename=show_filename,
-                    keep_tex=self.mode == CompilerMode.CLI and keep_tex,
-                    png=png,
-                    combine_pdf=combine_pdf
-                )
-                output_paths.append(output_path)
-
+            # Compile files with error handling
+            batch_result = self._compile_batch(
+                tex_files,
+                output_dir,
+                suffix=suffix,
+                packages=packages,
+                landscape=landscape,
+                no_rescale=no_rescale,
+                show_filename=show_filename,
+                keep_tex=self.mode == CompilerMode.CLI and keep_tex,
+                png=png,
+                combine_pdf=combine_pdf
+            )
+            
+            # Handle results
+            if batch_result.all_failed:
+                error_report = LaTeXErrorParser.format_batch_result(batch_result)
+                raise RuntimeError(error_report)
+            
+            # Get successful output paths
+            output_paths = [r.output_path for r in batch_result.successes if r.output_path]
+            
             # Handle combination if needed
             if combine_pdf and not png and len(output_paths) > 1:
-                return self._combine_pdfs(output_paths, output_dir)
+                combined_path = self._combine_pdfs(output_paths, output_dir)
+                if batch_result.has_failures:
+                    # Show warning about partial success
+                    logger.warning(LaTeXErrorParser.format_batch_result(batch_result))
+                return combined_path
 
-            # Return the first output path (for single files) or first path (for multiple without combine)
+            # Return first successful output or handle partial failures
             if output_paths:
+                if batch_result.has_failures:
+                    # Log warning about failures but continue
+                    logger.warning(LaTeXErrorParser.format_batch_result(batch_result))
                 return output_paths[0]
             
             # Fallback - should not happen if we have validated files
@@ -110,6 +144,42 @@ class TexCompiler:
             # Clean up any temporary files on error
             self._cleanup()
             raise
+
+    def _compile_batch(
+        self,
+        tex_files: List[Path],
+        output_dir: Path,
+        **options
+    ) -> BatchCompilationResult:
+        """Compile multiple files with error recovery."""
+        successes = []
+        failures = []
+        
+        for tex_file in tex_files:
+            try:
+                output_path = self._process_single_file(
+                    tex_file,
+                    output_dir,
+                    **options
+                )
+                successes.append(CompilationResult(
+                    file=tex_file,
+                    success=True,
+                    output_path=output_path
+                ))
+                logger.info(f"✅ Compiled: {tex_file.name}")
+                
+            except Exception as e:
+                failures.append(CompilationResult(
+                    file=tex_file,
+                    success=False,
+                    error=e
+                ))
+                logger.error(f"❌ Failed: {tex_file.name} - {e}")
+                # Continue with next file instead of stopping
+                continue
+        
+        return BatchCompilationResult(successes=successes, failures=failures)
 
     def _get_tex_files(self, input_path: Path, recursive: bool = False) -> List[Path]:
         """Get list of .tex files to process."""

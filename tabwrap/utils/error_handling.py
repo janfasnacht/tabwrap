@@ -15,6 +15,42 @@ class CompilationError:
     original_error: str
 
 
+@dataclass 
+class CompilationResult:
+    """Result of compiling a single file."""
+    file: Path
+    success: bool
+    output_path: Optional[Path] = None
+    error: Optional[Exception] = None
+
+
+@dataclass
+class BatchCompilationResult:
+    """Result of compiling multiple files."""
+    successes: List[CompilationResult]
+    failures: List[CompilationResult]
+    
+    @property
+    def success_count(self) -> int:
+        return len(self.successes)
+    
+    @property
+    def failure_count(self) -> int:
+        return len(self.failures)
+    
+    @property
+    def total_count(self) -> int:
+        return self.success_count + self.failure_count
+    
+    @property
+    def has_failures(self) -> bool:
+        return self.failure_count > 0
+    
+    @property
+    def all_failed(self) -> bool:
+        return self.failure_count > 0 and self.success_count == 0
+
+
 class LaTeXErrorParser:
     """Parse LaTeX compilation errors and provide helpful suggestions."""
     
@@ -92,20 +128,83 @@ class LaTeXErrorParser:
             ])
         
         return "\n".join(report_lines)
+    
+    @classmethod
+    def format_batch_result(cls, result: BatchCompilationResult) -> str:
+        """Format batch compilation results into user-friendly report."""
+        lines = []
+        
+        # Summary line
+        if result.all_failed:
+            lines.append(f"❌ All {result.total_count} files failed to compile:")
+        elif result.has_failures:
+            lines.append(f"⚠️  {result.failure_count} of {result.total_count} files failed to compile:")
+        else:
+            lines.append(f"✅ All {result.total_count} files compiled successfully!")
+            return "\n".join(lines)
+        
+        # Show failures first
+        if result.failures:
+            lines.append("\n📋 Failed files:")
+            for failure in result.failures:
+                lines.append(f"   • {failure.file.name}")
+                if hasattr(failure.error, '__str__'):
+                    error_msg = str(failure.error).replace("LaTeX compilation failed:\n", "").strip()
+                    if error_msg:
+                        lines.append(f"     {error_msg}")
+        
+        # Show successes 
+        if result.successes and result.has_failures:
+            lines.append(f"\n✅ Successfully compiled: {', '.join(s.file.name for s in result.successes)}")
+        
+        return "\n".join(lines)
 
 
-def check_latex_dependencies() -> List[str]:
-    """Check for LaTeX installation and common packages."""
+def check_latex_dependencies() -> Dict[str, bool]:
+    """Check for LaTeX installation and required tools."""
     import subprocess
-    missing = []
+    import shutil
     
+    dependencies = {
+        'pdflatex': False,
+        'convert': False,  # ImageMagick for PNG conversion
+    }
+    
+    # Check pdflatex
     try:
-        subprocess.run(["pdflatex", "--version"], 
-                      capture_output=True, check=True)
+        result = subprocess.run(["pdflatex", "--version"], 
+                              capture_output=True, check=True, text=True)
+        dependencies['pdflatex'] = True
     except (subprocess.CalledProcessError, FileNotFoundError):
-        missing.append("pdflatex not found. Install a LaTeX distribution (TeX Live, MiKTeX)")
+        pass
     
-    return missing
+    # Check ImageMagick convert for PNG output
+    dependencies['convert'] = shutil.which('convert') is not None
+    
+    return dependencies
+
+
+def format_dependency_report(deps: Dict[str, bool]) -> str:
+    """Format dependency check results."""
+    lines = ["LaTeX Dependencies:"]
+    
+    for tool, available in deps.items():
+        status = "✅" if available else "❌"
+        lines.append(f"  {status} {tool}")
+        
+        if not available:
+            if tool == 'pdflatex':
+                lines.append("      Install a LaTeX distribution (TeX Live, MiKTeX)")
+            elif tool == 'convert':
+                lines.append("      Install ImageMagick for PNG output support")
+    
+    missing_count = sum(1 for available in deps.values() if not available)
+    if missing_count == 0:
+        lines.append("\n✅ All dependencies satisfied!")
+    else:
+        lines.append(f"\n⚠️  {missing_count} dependencies missing")
+    
+    return "\n".join(lines)
 
 
 def validate_tex_content_syntax(content: str) -> List[str]:

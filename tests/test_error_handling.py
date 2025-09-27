@@ -35,9 +35,11 @@ Column 1 & Column 2 & Column 3 \\
     ])
     assert result.exit_code != 0
     # The error could be caught at validation or LaTeX compilation stage
+    # With enhanced error handling, we now get batch results format
     assert ("Invalid tabular content" in result.output or 
             "Syntax issues" in result.output or 
-            "LaTeX compilation failed" in result.output)
+            "LaTeX compilation failed" in result.output or
+            "files failed to compile" in result.output)
     test_logger.info(f"Error output: {result.output}")
 
 
@@ -99,7 +101,8 @@ More content
     assert result.exit_code != 0
     # Could be validation error or LaTeX compilation error
     assert ("Mismatched tabular" in result.output or 
-            "LaTeX compilation failed" in result.output)
+            "LaTeX compilation failed" in result.output or
+            "files failed to compile" in result.output)
 
 
 def test_latex_compilation_error(runner, tmp_path, test_logger):
@@ -124,8 +127,9 @@ Column 1 & Column 2 & Column 3 \\
     ])
     if result.exit_code != 0:
         test_logger.info(f"Expected LaTeX error: {result.output}")
-        # Check that we get a useful error message
-        assert "LaTeX compilation failed" in result.output
+        # Check that we get a useful error message with enhanced error handling
+        assert ("LaTeX compilation failed" in result.output or 
+                "files failed to compile" in result.output)
     else:
         # Some LaTeX installations might be more permissive
         test_logger.warning("LaTeX error was not caught - installation may be permissive")
