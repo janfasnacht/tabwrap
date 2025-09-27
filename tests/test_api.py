@@ -173,3 +173,35 @@ def test_packages_option(client, sample_tex, tmp_path):
 
     assert response.status_code == 200
     assert response.headers['content-type'] == 'application/pdf'
+
+
+def test_parallel_option(client, sample_tex, tmp_path):
+    """Test parallel processing option."""
+    tex_file = tmp_path / "test_table.tex"
+    tex_file.write_text(sample_tex)
+
+    with open(tex_file, 'rb') as f:
+        response = client.post(
+            '/api/compile',
+            files={'file': ('test_table.tex', f, 'text/plain')},
+            data={'parallel': True}
+        )
+
+    assert response.status_code == 200
+    assert response.headers['content-type'] == 'application/pdf'
+
+
+def test_max_workers_option(client, sample_tex, tmp_path):
+    """Test max_workers option with parallel processing."""
+    tex_file = tmp_path / "test_table.tex"
+    tex_file.write_text(sample_tex)
+
+    with open(tex_file, 'rb') as f:
+        response = client.post(
+            '/api/compile',
+            files={'file': ('test_table.tex', f, 'text/plain')},
+            data={'parallel': True, 'max_workers': 2}
+        )
+
+    assert response.status_code == 200
+    assert response.headers['content-type'] == 'application/pdf'

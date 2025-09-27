@@ -35,6 +35,8 @@ class CompileOptions(BaseModel):
     show_filename: bool = Field(False, description="Show filename as header")
     png: bool = Field(False, description="Output PNG instead of PDF")
     svg: bool = Field(False, description="Output SVG instead of PDF")
+    parallel: bool = Field(False, description="Use parallel processing for faster compilation")
+    max_workers: int = Field(None, description="Maximum number of parallel workers")
 
 class ErrorResponse(BaseModel):
     detail: str
@@ -81,6 +83,8 @@ def create_app():
         show_filename: bool = Form(False, description="Show filename as header"),
         png: bool = Form(False, description="Output PNG instead of PDF"),
         svg: bool = Form(False, description="Output SVG instead of PDF"),
+        parallel: bool = Form(False, description="Use parallel processing for faster compilation"),
+        max_workers: int = Form(None, description="Maximum number of parallel workers (default: CPU cores)"),
     ):
         """
         Compile LaTeX table fragment to PDF, PNG, or SVG.
@@ -131,7 +135,9 @@ def create_app():
                             show_filename=show_filename,
                             png=png,
                             svg=svg,
-                            keep_tex=False
+                            keep_tex=False,
+                            parallel=parallel,
+                            max_workers=max_workers
                         )
                     except FileValidationError as e:
                         raise HTTPException(status_code=400, detail=f"Invalid file content: {str(e)}")
