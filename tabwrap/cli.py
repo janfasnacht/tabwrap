@@ -5,87 +5,95 @@ from .core import TexCompiler, CompilerMode
 
 
 @click.command()
-@click.option(
-    '--input',
+@click.argument(
+    'input_path',
     type=click.Path(exists=True, file_okay=True, dir_okay=True),
     default=".",
-    help="Input .tex file or folder containing .tex files (default is current folder)."
+    required=False
 )
 @click.option(
-    '--output',
+    '-o', '--output',
     type=click.Path(),
-    default=str(Path.home() / "Downloads"),
-    help="Directory to save compiled PDFs (default is Downloads folder)."
+    default=".",
+    help="Output directory (default: current directory)"
 )
 @click.option(
     '--suffix',
     default="_compiled",
-    help="Suffix to add to output filenames (default is '_compiled')."
+    help="Output filename suffix (default: '_compiled')"
 )
 @click.option(
     '--packages',
     default="",
-    help="Comma-separated list of LaTeX packages to include (auto-detects necessary packages if left empty)."
+    help="Comma-separated LaTeX packages (auto-detected if empty)"
 )
 @click.option(
     '--landscape',
     is_flag=True,
-    help="Set the document to landscape orientation."
+    help="Use landscape orientation"
 )
 @click.option(
-    '--no-rescale',
+    '--no-resize',
     is_flag=True,
-    help="Disable table rescaling (default is to rescale to fit page)."
+    help="Disable automatic table resizing"
 )
 @click.option(
-    '--show-filename',
+    '--header',
     is_flag=True,
-    help="Show original .tex filename as header (off by default)."
+    help="Show filename as header in output"
 )
 @click.option(
     '--keep-tex',
     is_flag=True,
-    help="Keep the generated _compiled.tex file (default is to delete it)."
+    help="Keep intermediate .tex files"
 )
 @click.option(
-    '--png',
+    '-p', '--png',
     is_flag=True,
-    help="Output a PNG instead of a PDF (default is PDF)."
+    help="Output PNG instead of PDF"
 )
 @click.option(
-    '--combine-pdf',
+    '-c', '--combine-pdf',
     is_flag=True,
-    help="Combine all PDFs into a single PDF with ToC (default is separate PDFs)."
+    help="Combine multiple PDFs with table of contents"
 )
 @click.option(
-    '--recursive',
+    '-r', '--recursive',
     is_flag=True,
-    help="Recursively search for .tex files in subdirectories when input is a folder."
+    help="Process subdirectories recursively"
 )
 def main(
-    input: str,
+    input_path: str,
     output: str,
     suffix: str,
     packages: str,
     landscape: bool,
-    no_rescale: bool,
-    show_filename: bool,
+    no_resize: bool,
+    header: bool,
     keep_tex: bool,
     png: bool,
     combine_pdf: bool,
     recursive: bool
 ) -> None:
-    """Compile LaTeX tables to PDF/PNG with automatic formatting."""
+    """Wrap LaTeX table fragments into complete documents.
+    
+    INPUT_PATH: .tex file or directory to process (default: current directory)
+    """
+    
+    # Validate argument combinations
+    if combine_pdf and png:
+        click.echo("Warning: --combine-pdf ignored when using --png output", err=True)
+    
     try:
         with TexCompiler(mode=CompilerMode.CLI) as compiler:
             output_path = compiler.compile_tex(
-                input_path=input,
+                input_path=input_path,
                 output_dir=output,
                 suffix=suffix,
                 packages=packages,
                 landscape=landscape,
-                no_rescale=no_rescale,
-                show_filename=show_filename,
+                no_rescale=no_resize,
+                show_filename=header,
                 keep_tex=keep_tex,
                 png=png,
                 combine_pdf=combine_pdf,

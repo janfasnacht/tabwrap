@@ -28,52 +28,63 @@ And automatically wraps them into complete, compilable LaTeX documents with:
 
 ```bash
 pip install tabwrap
-tabwrap --input <file_or_folder>
+tabwrap [file_or_folder]
 ```
 
 ### Basic Examples
 
 ```bash
 # Compile a single table
-tabwrap --input regression_table.tex
+tabwrap regression_table.tex
 
 # Process all tables in a folder
-tabwrap --input ./results_tables/
+tabwrap ./results_tables/
 
-# Output PNG with landscape orientation
-tabwrap --input table.tex --png --landscape
+# Output PNG with landscape orientation  
+tabwrap table.tex -p --landscape
+
+# Use short flags for common options
+tabwrap ./tables/ -r -c    # recursive + combine PDFs
 ```
 
 ### All Options:
 
-- `--input`: Path to a `.tex` file or a folder containing `.tex` files. (Default is the current folder)
-- `--output`: Directory to save compiled PDFs. (Default is `~/Downloads`)
-- `--suffix`: Suffix for the output filenames. (Default is `_compiled`)
-- `--packages`: Comma-separated list of LaTeX packages to include. If left empty, the tool will auto-detect necessary packages based on the `.tex` content.
-- `--landscape`: Set the document to landscape orientation.
-- `--no-rescale`: Disable table rescaling (by default, tables are resized to fit the page width while maintaining aspect ratio).
-- `--show-filename`: Show the original `.tex` filename as a header in the PDF, centered at the top of the page and formatted using `\texttt`. (Off by default)
-- `--keep-tex`: Keep the generated `_compiled.tex` files (by default, they are deleted after compilation).
-- `--png`: Output a (cropped to content) PNG image of the table instead of a PDF. (Off by default)
-- `--combine-pdf`: Combine all PDFs into a single file with a table of contents, bookmarks, and filenames as headers. (Off by default)
+**Positional:**
+- `INPUT_PATH`: .tex file or directory to process (default: current directory)
+
+**Output Options:**
+- `-o, --output PATH`: Output directory (default: current directory)  
+- `-p, --png`: Output PNG instead of PDF
+- `--suffix TEXT`: Filename suffix (default: '_compiled')
+
+**Processing Options:**
+- `-r, --recursive`: Process subdirectories recursively
+- `-c, --combine-pdf`: Combine multiple PDFs with table of contents
+- `--landscape`: Use landscape orientation
+- `--no-resize`: Disable automatic table resizing
+
+**Display Options:**
+- `--header`: Show filename as header in output
+- `--packages TEXT`: Comma-separated LaTeX packages (auto-detected if empty)
+- `--keep-tex`: Keep intermediate .tex files
 
 ## Advanced Examples
 
 ```bash
 # Recursive folder processing with combination
-tabwrap --input ./tables/ --recursive --combine-pdf
+tabwrap ./tables/ -r -c
 
-# Custom output location with filename headers
-tabwrap --input table.tex --output ./output/ --show-filename
+# Custom output location with filename headers  
+tabwrap table.tex -o ./output/ --header
 
 # PNG output with no file suffix
-tabwrap --input table.tex --png --suffix ""
+tabwrap table.tex -p --suffix ""
 
 # Keep intermediate files and add custom packages
-tabwrap --input table.tex --keep-tex --packages "array,multirow"
+tabwrap table.tex --keep-tex --packages "array,multirow"
 
-# Disable auto-rescaling for exact table dimensions
-tabwrap --input table.tex --no-rescale
+# Disable auto-resizing for exact table dimensions
+tabwrap table.tex --no-resize
 ```
 
 ## Requirements
@@ -95,10 +106,10 @@ tabwrap --input table.tex --no-rescale
 stata -b do analysis.do  # Creates table1.tex, table2.tex
 
 # Quick inspection
-tabwrap --input ./results/ --png
+tabwrap ./results/ -p
 
 # Final publication version
-tabwrap --input ./results/ --combine-pdf --show-filename
+tabwrap ./results/ -c --header
 ```
 
 ## License

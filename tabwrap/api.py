@@ -1,9 +1,15 @@
 # tabwrap/api.py
-from flask import Flask, request, send_file, jsonify, send_from_directory
-from flask_swagger_ui import get_swaggerui_blueprint
-from flask_cors import CORS
+try:
+    from flask import Flask, request, send_file, jsonify, send_from_directory
+    from flask_swagger_ui import get_swaggerui_blueprint
+    from flask_cors import CORS
+    from werkzeug.utils import secure_filename
+except ImportError as e:
+    raise ImportError(
+        "API dependencies not installed. Install with: pip install tabwrap[api]"
+    ) from e
+
 from pathlib import Path
-from werkzeug.utils import secure_filename
 from datetime import datetime
 import os
 

@@ -20,31 +20,31 @@ Column 1 & Column 2 & Column 3 \\
 \end{tabular}
 
 Command:
-tabwrap --input tex_table.tex
+tabwrap tex_table.tex
 """
 
 # Convert to PNG with custom output directory
 """
 Command:
-tabwrap --input tex_table.tex --output ./output --png
+tabwrap tex_table.tex -o ./output -p
 """
 
 # Process all tables in a directory and combine
 """
 Command:
-tabwrap --input ./tables --output ./output --combine-pdf
+tabwrap ./tables -o ./output -c
 """
 
 # Landscape mode with filename display
 """
 Command:
-tabwrap --input tex_table.tex --landscape --show-filename
+tabwrap tex_table.tex --landscape --header
 """
 
 # Keep intermediate files and use custom packages
 """
 Command:
-tabwrap --input tex_table.tex --keep-tex --packages "array,multirow"
+tabwrap tex_table.tex --keep-tex --packages "array,multirow"
 """
 
 # Programmatic usage

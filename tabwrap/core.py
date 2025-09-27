@@ -15,6 +15,12 @@ from .utils.validation import (
     is_valid_tabular_content,
     FileValidationError
 )
+from .utils.error_handling import (
+    LaTeXErrorParser,
+    check_latex_dependencies,
+    validate_tex_content_syntax,
+    CompilationError
+)
 from .utils.file_handling import create_temp_dir, clean_up
 from .utils.image_processing import convert_pdf_to_cropped_png
 from .utils.logging import setup_logging
@@ -124,6 +130,12 @@ class TexCompiler:
         is_valid, error = is_valid_tabular_content(content)
         if not is_valid:
             raise ValueError(f"Invalid tabular content in {tex_file}: {error}")
+        
+        # Additional syntax validation
+        syntax_issues = validate_tex_content_syntax(content)
+        if syntax_issues:
+            issues_str = "\n  ".join(syntax_issues)
+            raise ValueError(f"Syntax issues in {tex_file}:\n  {issues_str}")
 
         # Prepare LaTeX content
         full_tex = self._prepare_latex_content(
@@ -230,11 +242,22 @@ class TexCompiler:
             )
 
             if result.returncode != 0:
-                raise RuntimeError(f"LaTeX compilation failed: {result.stderr}")
+                # Parse LaTeX log for better error messages
+                log_path = output_dir / (tex_file.stem + suffix + ".log")
+                if log_path.exists():
+                    log_content = log_path.read_text()
+                    errors = LaTeXErrorParser.parse_latex_log(log_content, tex_file)
+                    if errors:
+                        error_report = LaTeXErrorParser.format_error_report(errors)
+                        raise RuntimeError(f"LaTeX compilation failed:\n{error_report}")
+                
+                # Fallback to basic error message
+                stderr_msg = result.stderr.strip() if result.stderr.strip() else "Unknown compilation error"
+                raise RuntimeError(f"LaTeX compilation failed: {stderr_msg}")
 
             pdf_path = output_dir / (tex_file.stem + suffix + ".pdf")
             if not pdf_path.exists():
-                raise RuntimeError("PDF file not generated")
+                raise RuntimeError("PDF file not generated despite successful compilation")
 
             # Convert to PNG if requested
             if options.get('png'):

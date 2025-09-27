@@ -1,9 +1,15 @@
-from flask import Flask, request, send_file, jsonify
-from flask_cors import CORS
+try:
+    from flask import Flask, request, send_file, jsonify
+    from flask_cors import CORS
+    from werkzeug.utils import secure_filename
+except ImportError as e:
+    raise ImportError(
+        "API dependencies not installed. Install with: pip install tabwrap[api]"
+    ) from e
+
 from pathlib import Path
 import tempfile
 import os
-from werkzeug.utils import secure_filename
 from click.testing import CliRunner
 from .cli import main
 import logging
@@ -43,16 +49,16 @@ def setup_compilation_options(request_form: dict) -> dict:
 
 def build_cli_args(input_path: Path, options: dict) -> list:
     """Build command line arguments for the TeX compiler."""
-    args = ['--input', str(input_path), '--output', options['output']]
+    args = [str(input_path), '-o', options['output']]
 
     # Optional arguments
     if options['suffix']: args.extend(['--suffix', options['suffix']])
     if options['packages']: args.extend(['--packages', options['packages']])
     if options['landscape']: args.append('--landscape')
-    if options['no_rescale']: args.append('--no-rescale')
-    if options['show_filename']: args.append('--show-filename')
+    if options['no_rescale']: args.append('--no-resize')
+    if options['show_filename']: args.append('--header')
     if options['keep_tex']: args.append('--keep-tex')
-    if options['png']: args.append('--png')
+    if options['png']: args.append('-p')
 
     return args
 

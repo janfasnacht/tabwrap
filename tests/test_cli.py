@@ -27,17 +27,17 @@ Column 1 & Column 2 & Column 3 \\
 
 def test_basic_compilation(runner, sample_tex, tmp_path):
     result = runner.invoke(main, [
-        '--input', str(sample_tex),
-        '--output', str(tmp_path)
+        str(sample_tex),
+        '-o', str(tmp_path)
     ])
     assert result.exit_code == 0
     assert (tmp_path / "test_table_compiled.pdf").exists()
 
 def test_png_output(runner, sample_tex, tmp_path):
     result = runner.invoke(main, [
-        '--input', str(sample_tex),
-        '--output', str(tmp_path),
-        '--png'
+        str(sample_tex),
+        '-o', str(tmp_path),
+        '-p'
     ])
     assert result.exit_code == 0
     assert (tmp_path / "test_table_compiled.png").exists()
@@ -45,8 +45,8 @@ def test_png_output(runner, sample_tex, tmp_path):
 
 def test_landscape_mode(runner, sample_tex, tmp_path, test_logger):
     result = runner.invoke(main, [
-        '--input', str(sample_tex),
-        '--output', str(tmp_path),
+        str(sample_tex),
+        '-o', str(tmp_path),
         '--landscape'
     ])
     if result.exit_code != 0:
@@ -73,9 +73,9 @@ Table {i} & Column 2 & Column 3 \\\\
         test_logger.info(f"Created test file: {file_path}")
 
     result = runner.invoke(main, [
-        '--input', str(tmp_path),
-        '--output', str(tmp_path),
-        '--combine-pdf'
+        str(tmp_path),
+        '-o', str(tmp_path),
+        '-c'
     ])
     if result.exit_code != 0:
         test_logger.error(f"Command failed with output: {result.output}")
@@ -119,10 +119,10 @@ Subdir {i} & Column 2 & Column 3 \\\\
 
     # Test recursive compilation
     result = runner.invoke(main, [
-        '--input', str(tmp_path),
-        '--output', str(tmp_path),
-        '--recursive',
-        '--combine-pdf'
+        str(tmp_path),
+        '-o', str(tmp_path),
+        '-r',
+        '-c'
     ])
     if result.exit_code != 0:
         test_logger.error(f"Command failed with output: {result.output}")
@@ -150,16 +150,16 @@ Nested Table & Column 2 & Column 3 \\
     
     # Test non-recursive - should find no files
     result = runner.invoke(main, [
-        '--input', str(tmp_path),
-        '--output', str(tmp_path)
+        str(tmp_path),
+        '-o', str(tmp_path)
     ])
     assert result.exit_code != 0  # Should fail - no .tex files found
     
     # Test recursive - should find the nested file
     result = runner.invoke(main, [
-        '--input', str(tmp_path),
-        '--output', str(tmp_path),
-        '--recursive'
+        str(tmp_path),
+        '-o', str(tmp_path),
+        '-r'
     ])
     if result.exit_code != 0:
         test_logger.error(f"Recursive command failed with output: {result.output}")
