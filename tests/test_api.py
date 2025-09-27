@@ -1,23 +1,15 @@
 # tests/test_api.py
 import pytest
 from pathlib import Path
+from fastapi.testclient import TestClient
 from tabwrap.api import create_app
 
 
 @pytest.fixture
-def app():
-    """Create test app instance."""
-    app = create_app({
-        'TESTING': True,
-        'MAX_CONTENT_LENGTH': 16 * 1024 * 1024
-    })
-    return app
-
-
-@pytest.fixture
-def client(app):
-    """Create test client."""
-    return app.test_client()
+def client():
+    """Create FastAPI test client."""
+    app = create_app()
+    return TestClient(app)
 
 
 @pytest.fixture
@@ -37,9 +29,12 @@ Header 1 & Header 2 & Header 3 \\
 
 def test_health_check(client):
     """Test health check endpoint."""
-    response = client.get('/api/health')
+    response = client.get("/api/health")
+    
     assert response.status_code == 200
-    assert response.json['status'] == 'healthy'
+    data = response.json()
+    assert data["status"] == "healthy"
+    assert data["version"] == "1.0.0"
 
 
 def test_compile_valid_table(client, sample_tex, tmp_path):
@@ -51,17 +46,17 @@ def test_compile_valid_table(client, sample_tex, tmp_path):
     with open(tex_file, 'rb') as f:
         response = client.post(
             '/api/compile',
+            files={'file': ('test_table.tex', f, 'text/plain')},
             data={
-                'file': (f, 'test_table.tex'),
-                'landscape': 'false',
-                'png': 'false'
-            },
-            content_type='multipart/form-data'
+                'landscape': False,
+                'png': False,
+                'svg': False,
+            }
         )
 
     assert response.status_code == 200
-    assert response.headers['Content-Type'] == 'application/pdf'
-    assert 'test_table_compiled.pdf' in response.headers['Content-Disposition']
+    assert response.headers['content-type'] == 'application/pdf'
+    assert 'test_table_compiled.pdf' in response.headers['content-disposition']
 
 
 def test_compile_invalid_content(client, tmp_path):
@@ -73,14 +68,12 @@ def test_compile_invalid_content(client, tmp_path):
     with open(tex_file, 'rb') as f:
         response = client.post(
             '/api/compile',
-            data={
-                'file': (f, 'invalid.tex')
-            },
-            content_type='multipart/form-data'
+            files={'file': ('invalid.tex', f, 'text/plain')}
         )
 
     assert response.status_code == 400
-    assert 'Invalid table content' in response.json['error']
+    data = response.json()
+    assert "Invalid LaTeX content" in data["detail"]
 
 
 def test_png_output(client, sample_tex, tmp_path):
@@ -91,24 +84,92 @@ def test_png_output(client, sample_tex, tmp_path):
     with open(tex_file, 'rb') as f:
         response = client.post(
             '/api/compile',
-            data={
-                'file': (f, 'test_table.tex'),
-                'png': 'true'
-            },
-            content_type='multipart/form-data'
+            files={'file': ('test_table.tex', f, 'text/plain')},
+            data={'png': True}
         )
 
-    # Add these debug lines
-    if response.status_code != 200:
-        print(f"Response status: {response.status_code}")
-        data = response.get_json()
-        print(f"Error message: {data.get('error', 'No error message')}")
+    assert response.status_code == 200
+    assert response.headers['content-type'] == 'image/png'
+    assert 'test_table_compiled.png' in response.headers['content-disposition']
 
-        # Check if PDF exists in temp directory
-        temp_dir = Path('/var/folders/tz/yckbhlqd58122jdxxjpf4d400000gp/T/tex_compiler_pxue11af')
-        if temp_dir.exists():
-            print("Files in temp directory:")
-            for file in temp_dir.glob('*'):
-                print(f"- {file.name} ({file.stat().st_size} bytes)")
+
+def test_svg_output(client, sample_tex, tmp_path):
+    """Test SVG output option."""
+    tex_file = tmp_path / "test_table.tex"
+    tex_file.write_text(sample_tex)
+
+    with open(tex_file, 'rb') as f:
+        response = client.post(
+            '/api/compile',
+            files={'file': ('test_table.tex', f, 'text/plain')},
+            data={'svg': True}
+        )
 
     assert response.status_code == 200
+    assert response.headers['content-type'] == 'image/svg+xml'
+    assert 'test_table_compiled.svg' in response.headers['content-disposition']
+
+
+def test_png_and_svg_mutually_exclusive(client, sample_tex, tmp_path):
+    """Test that PNG and SVG options are mutually exclusive."""
+    tex_file = tmp_path / "test_table.tex"
+    tex_file.write_text(sample_tex)
+
+    with open(tex_file, 'rb') as f:
+        response = client.post(
+            '/api/compile',
+            files={'file': ('test_table.tex', f, 'text/plain')},
+            data={'png': True, 'svg': True}
+        )
+
+    assert response.status_code == 400
+    data = response.json()
+    assert "Cannot specify both PNG and SVG" in data["detail"]
+
+
+def test_invalid_file_type(client, tmp_path):
+    """Test uploading non-.tex file."""
+    invalid_file = tmp_path / "test.txt"
+    invalid_file.write_text("Not a tex file")
+
+    with open(invalid_file, 'rb') as f:
+        response = client.post(
+            '/api/compile',
+            files={'file': ('test.txt', f, 'text/plain')}
+        )
+
+    assert response.status_code == 400
+    data = response.json()
+    assert "Only .tex files are allowed" in data["detail"]
+
+
+def test_landscape_option(client, sample_tex, tmp_path):
+    """Test landscape orientation option."""
+    tex_file = tmp_path / "test_table.tex"
+    tex_file.write_text(sample_tex)
+
+    with open(tex_file, 'rb') as f:
+        response = client.post(
+            '/api/compile',
+            files={'file': ('test_table.tex', f, 'text/plain')},
+            data={'landscape': True}
+        )
+
+    assert response.status_code == 200
+    assert response.headers['content-type'] == 'application/pdf'
+
+
+def test_packages_option(client, sample_tex, tmp_path):
+    """Test custom packages option."""
+    tex_file = tmp_path / "test_table.tex"
+    tex_file.write_text(sample_tex)
+
+    with open(tex_file, 'rb') as f:
+        response = client.post(
+            '/api/compile',
+            files={'file': ('test_table.tex', f, 'text/plain')},
+            data={'packages': 'booktabs,siunitx'}
+        )
+
+    assert response.status_code == 200
+    assert response.headers['content-type'] == 'application/pdf'

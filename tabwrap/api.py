@@ -1,10 +1,9 @@
 # tabwrap/api.py
 try:
-    from flask import Flask, request, send_file
-    from flask_restx import Api, Resource, fields, reqparse
-    from flask_cors import CORS
-    from werkzeug.utils import secure_filename
-    from werkzeug.datastructures import FileStorage
+    from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Depends
+    from fastapi.responses import FileResponse
+    from fastapi.middleware.cors import CORSMiddleware
+    from pydantic import BaseModel, Field
 except ImportError as e:
     raise ImportError(
         "API dependencies not installed. Install with: pip install tabwrap[api]"
@@ -12,10 +11,10 @@ except ImportError as e:
 
 from pathlib import Path
 from datetime import datetime
-import os
 import tempfile
+from typing import Optional
 
-from .core import TexCompiler, CompilerMode
+from .core import TabWrap, CompilerMode
 from .latex import FileValidationError, is_valid_tabular_content
 from .config import setup_logging
 
@@ -24,154 +23,167 @@ logger = setup_logging(
     log_file=Path("logs") / f"api_{datetime.now():%Y%m%d}.log"
 )
 
-def create_app(config=None):
-    """Create Flask app with API."""
-    app = Flask(__name__)
-    CORS(app)
-    
-    if config:
-        app.config.update(config)
-    
-    # Configure API
-    api = Api(
-        app,
-        version='1.0',
-        title='TabWrap API',
-        description='LaTeX table fragment compilation API',
-        doc='/api/docs/',
-        prefix='/api'
+# Pydantic Models
+class HealthResponse(BaseModel):
+    status: str = "healthy"
+    version: str = "1.0.0"
+
+class CompileOptions(BaseModel):
+    packages: str = Field("", description="Comma-separated LaTeX packages")
+    landscape: bool = Field(False, description="Use landscape orientation")
+    no_rescale: bool = Field(False, description="Disable automatic table resizing")
+    show_filename: bool = Field(False, description="Show filename as header")
+    png: bool = Field(False, description="Output PNG instead of PDF")
+    svg: bool = Field(False, description="Output SVG instead of PDF")
+
+class ErrorResponse(BaseModel):
+    detail: str
+
+def create_app():
+    """Create FastAPI application."""
+    app = FastAPI(
+        title="TabWrap API",
+        description="LaTeX table fragment compilation API with automatic OpenAPI documentation",
+        version="1.0.0",
+        docs_url="/api/docs",
+        redoc_url="/api/redoc",
     )
     
-    # Define API models
-    compile_model = api.model('CompileOptions', {
-        'packages': fields.String(description='Comma-separated LaTeX packages', example='booktabs,siunitx'),
-        'landscape': fields.Boolean(description='Use landscape orientation', default=False),
-        'no_rescale': fields.Boolean(description='Disable automatic table resizing', default=False),
-        'show_filename': fields.Boolean(description='Show filename as header', default=False),
-        'png': fields.Boolean(description='Output PNG instead of PDF', default=False),
-        'svg': fields.Boolean(description='Output SVG instead of PDF', default=False),
-        'combine_pdf': fields.Boolean(description='Combine multiple PDFs (not applicable for single files)', default=False),
-    })
+    # Add CORS middleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # Configure appropriately for production
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     
-    def parse_bool(value):
-        """Parse boolean from string, handling 'false' correctly."""
-        if isinstance(value, str):
-            return value.lower() in ('true', '1', 'yes', 'on')
-        return bool(value)
+    @app.get("/api/health", response_model=HealthResponse, tags=["Health"])
+    async def health_check():
+        """Health check endpoint."""
+        return HealthResponse()
     
-    # File upload parser
-    upload_parser = reqparse.RequestParser()
-    upload_parser.add_argument('file', location='files', type=FileStorage, required=True, help='LaTeX table file')
-    upload_parser.add_argument('packages', type=str, help='Comma-separated LaTeX packages', default='')
-    upload_parser.add_argument('landscape', type=parse_bool, help='Use landscape orientation', default=False)
-    upload_parser.add_argument('no_rescale', type=parse_bool, help='Disable automatic table resizing', default=False)
-    upload_parser.add_argument('show_filename', type=parse_bool, help='Show filename as header', default=False)
-    upload_parser.add_argument('png', type=parse_bool, help='Output PNG instead of PDF', default=False)
-    upload_parser.add_argument('svg', type=parse_bool, help='Output SVG instead of PDF', default=False)
-    
-    @api.route('/health')
-    class HealthCheck(Resource):
-        def get(self):
-            """Health check endpoint"""
-            return {'status': 'healthy', 'version': '1.0.0'}
-    
-    @api.route('/compile')
-    class CompileTable(Resource):
-        @api.expect(upload_parser)
-        @api.doc('compile_table')
-        @api.response(200, 'Success - returns compiled file')
-        @api.response(400, 'Bad Request - invalid input')
-        @api.response(500, 'Internal Server Error - compilation failed')
-        def post(self):
-            """Compile LaTeX table fragment to PDF, PNG, or SVG"""
+    @app.post(
+        "/api/compile",
+        response_class=FileResponse,
+        tags=["Compilation"],
+        responses={
+            200: {"description": "Compiled file", "content": {"application/pdf": {}, "image/png": {}, "image/svg+xml": {}}},
+            400: {"model": ErrorResponse, "description": "Bad Request - Invalid input"},
+            500: {"model": ErrorResponse, "description": "Internal Server Error - Compilation failed"}
+        }
+    )
+    async def compile_table(
+        file: UploadFile = File(..., description="LaTeX table file (.tex)"),
+        packages: str = Form("", description="Comma-separated LaTeX packages"),
+        landscape: bool = Form(False, description="Use landscape orientation"),
+        no_rescale: bool = Form(False, description="Disable automatic table resizing"),
+        show_filename: bool = Form(False, description="Show filename as header"),
+        png: bool = Form(False, description="Output PNG instead of PDF"),
+        svg: bool = Form(False, description="Output SVG instead of PDF"),
+    ):
+        """
+        Compile LaTeX table fragment to PDF, PNG, or SVG.
+        
+        Upload a .tex file containing a LaTeX table fragment (like \\begin{tabular}...\\end{tabular})
+        and get back a compiled PDF, PNG, or SVG file.
+        
+        The system automatically detects required LaTeX packages and handles compilation.
+        """
+        try:
+            # Validate file type
+            if not file.filename or not file.filename.endswith('.tex'):
+                raise HTTPException(status_code=400, detail="Invalid file. Only .tex files are allowed.")
+            
+            # Validate mutually exclusive options
+            if png and svg:
+                raise HTTPException(status_code=400, detail="Cannot specify both PNG and SVG output formats.")
+            
+            # Read file content
+            content = await file.read()
             try:
-                args = upload_parser.parse_args()
-                file = args['file']
+                content_str = content.decode('utf-8')
+            except UnicodeDecodeError:
+                raise HTTPException(status_code=400, detail="File must be valid UTF-8 encoded text.")
+            
+            # Validate LaTeX content
+            if not is_valid_tabular_content(content_str):
+                raise HTTPException(status_code=400, detail="Invalid LaTeX content. Must contain tabular environment.")
+            
+            # Create temporary directory
+            temp_dir = Path(tempfile.mkdtemp())
+            
+            try:
+                # Save uploaded file
+                input_path = temp_dir / file.filename
+                with open(input_path, 'w', encoding='utf-8') as f:
+                    f.write(content_str)
                 
-                if not file or not allowed_file(file.filename):
-                    api.abort(400, 'Invalid file. Only .tex files are allowed.')
+                # Compile with TabWrap
+                with TabWrap(mode=CompilerMode.WEB) as compiler:
+                    try:
+                        output_path = compiler.compile_tex(
+                            input_path=input_path,
+                            output_dir=temp_dir,
+                            packages=packages,
+                            landscape=landscape,
+                            no_rescale=no_rescale,
+                            show_filename=show_filename,
+                            png=png,
+                            svg=svg,
+                            keep_tex=False
+                        )
+                    except FileValidationError as e:
+                        raise HTTPException(status_code=400, detail=f"Invalid file content: {str(e)}")
+                    except RuntimeError as e:
+                        # Check if it's a validation error
+                        error_msg = str(e)
+                        if any(phrase in error_msg for phrase in ['Invalid tabular content', 'No tabular environment found']):
+                            raise HTTPException(status_code=400, detail=f"Invalid LaTeX content: {error_msg}")
+                        else:
+                            raise HTTPException(status_code=500, detail=f"Compilation failed: {error_msg}")
                 
-                # Validate mutually exclusive options
-                if args['png'] and args['svg']:
-                    api.abort(400, 'Cannot specify both PNG and SVG output formats.')
+                # Determine content type and filename
+                stem = Path(file.filename).stem
+                if svg:
+                    media_type = 'image/svg+xml'
+                    filename = f"{stem}_compiled.svg"
+                elif png:
+                    media_type = 'image/png'
+                    filename = f"{stem}_compiled.png"
+                else:
+                    media_type = 'application/pdf'
+                    filename = f"{stem}_compiled.pdf"
                 
-                # Create temporary directory
-                temp_dir = Path(tempfile.mkdtemp())
+                # Return file
+                return FileResponse(
+                    path=str(output_path),
+                    media_type=media_type,
+                    filename=filename
+                )
                 
-                try:
-                    # Save uploaded file
-                    filename = secure_filename(file.filename)
-                    input_path = temp_dir / filename
-                    file.save(str(input_path))
-                    
-                    # Validate content
-                    with open(input_path, 'r') as f:
-                        content = f.read()
-                    
-                    if not is_valid_tabular_content(content):
-                        api.abort(400, 'Invalid LaTeX content. Must contain tabular environment.')
-                    
-                    # Compile
-                    with TexCompiler(mode=CompilerMode.WEB) as compiler:
-                        try:
-                            output_path = compiler.compile_tex(
-                                input_path=input_path,
-                                output_dir=temp_dir,
-                                packages=args['packages'],
-                                landscape=args['landscape'],
-                                no_rescale=args['no_rescale'],
-                                show_filename=args['show_filename'],
-                                png=args['png'],
-                                svg=args['svg'],
-                                keep_tex=False
-                            )
-                        except FileValidationError as e:
-                            api.abort(400, f'Invalid file content: {str(e)}')
-                        except RuntimeError as e:
-                            # Check if it's a validation error
-                            if 'Invalid tabular content' in str(e) or 'No tabular environment found' in str(e):
-                                api.abort(400, f'Invalid LaTeX content: {str(e)}')
-                            else:
-                                api.abort(500, f'Compilation failed: {str(e)}')
-                    
-                    # Determine content type
-                    if args['svg']:
-                        mimetype = 'image/svg+xml'
-                        ext = 'svg'
-                    elif args['png']:
-                        mimetype = 'image/png'
-                        ext = 'png'
-                    else:
-                        mimetype = 'application/pdf'
-                        ext = 'pdf'
-                    
-                    return send_file(
-                        output_path,
-                        mimetype=mimetype,
-                        as_attachment=True,
-                        download_name=f"{Path(filename).stem}_compiled.{ext}"
-                    )
-                    
-                except Exception as e:
-                    logger.error(f"Unexpected error: {e}")
-                    api.abort(500, f'Server error: {str(e)}')
-                finally:
-                    # Cleanup handled by TexCompiler context manager
-                    pass
-                    
+            except HTTPException:
+                # Re-raise HTTP exceptions as-is
+                raise
             except Exception as e:
-                logger.error(f"API error: {e}")
-                api.abort(500, f'Server error: {str(e)}')
+                logger.error(f"Unexpected error during compilation: {e}")
+                raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+            finally:
+                # Cleanup is handled by TabWrap context manager
+                pass
+                
+        except HTTPException:
+            # Re-raise HTTP exceptions as-is
+            raise
+        except Exception as e:
+            logger.error(f"API error: {e}")
+            raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
     
     return app
 
-def allowed_file(filename: str) -> bool:
-    """Check if the file extension is allowed."""
-    ALLOWED_EXTENSIONS = {'tex'}
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-# For backwards compatibility
+# Create app instance
 app = create_app()
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
