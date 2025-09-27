@@ -1,9 +1,23 @@
 [tool.poetry]
 name = "tabwrap"
-version = "0.1.0"
+version = "1.0.0"
 description = "Wrap LaTeX table fragments into complete documents for research workflows"
-authors = ["janfasnacht <jan.fasnacht@gmail.com>"]
+authors = ["Jan Fasnacht <jan.fasnacht@gmail.com>"]
 readme = "README.md"
+homepage = "https://github.com/janfasnacht/tabwrap"
+repository = "https://github.com/janfasnacht/tabwrap"
+documentation = "https://github.com/janfasnacht/tabwrap#readme"
+keywords = ["latex", "tables", "research", "academic", "statistics"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Text Processing :: Markup :: LaTeX",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Environment :: Console",
+]
 packages = [
     { include = "tabwrap" }
 ]
@@ -12,7 +26,7 @@ packages = [
 tabwrap = "tabwrap.cli:main"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.9"
 click = "^8.1.7"
 pymupdf = "^1.24.11"
 numpy = "^2.1.2"

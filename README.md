@@ -1,5 +1,9 @@
 # tabwrap
 
+[![PyPI version](https://badge.fury.io/py/tabwrap.svg)](https://pypi.org/project/tabwrap/)
+[![Python](https://img.shields.io/pypi/pyversions/tabwrap.svg)](https://pypi.org/project/tabwrap/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 **Wrap LaTeX table fragments into complete documents for research workflows**
 
 A Python tool that transforms statistical programming output (LaTeX table fragments) into publication-ready PDFs and PNGs. Perfect for researchers who need to quickly inspect, share, and explore tables from Stata, R, Python, and other statistical tools.
@@ -18,20 +22,44 @@ Intercept & 1.23 & 0.045 \\
 ```
 
 And automatically wraps them into complete, compilable LaTeX documents with:
-- Auto-detected packages (booktabs, array, etc.)
-- Proper document structure and preambles  
-- Smart table resizing to fit pages
-- Optional landscape orientation, PNG output, filename headers
-- Batch processing and PDF combination
+- ✅ Auto-detected packages (booktabs, tabularx, siunitx, etc.)
+- ✅ Proper document structure and preambles  
+- ✅ Smart table resizing to fit pages
+- ✅ Multi-file batch processing with error recovery
+- ✅ Combined PDFs with table of contents
+- ✅ PNG output with automatic cropping
+- ✅ Landscape orientation and custom formatting
+- ✅ Enhanced error reporting with suggestions
 
-## Installation & Usage
+## Quick Start
 
+### Prerequisites
+**LaTeX Distribution Required:** tabwrap needs a LaTeX installation to compile documents.
+
+- **Windows**: [MiKTeX](https://miktex.org/download) or [TeX Live](https://tug.org/texlive/)
+- **macOS**: [MacTeX](https://tug.org/mactex/) or `brew install --cask mactex`
+- **Linux**: `sudo apt-get install texlive-full` or equivalent
+
+**Optional for PNG output**: [ImageMagick](https://imagemagick.org/script/download.php)
+
+### Installation
+
+#### Recommended (CLI tools):
 ```bash
-pip install tabwrap
-tabwrap [file_or_folder]
+pipx install tabwrap
 ```
 
-### Basic Examples
+#### Standard Python installation:
+```bash
+pip install tabwrap
+```
+
+#### With API support:
+```bash
+pip install tabwrap[api]
+```
+
+### Basic Usage
 
 ```bash
 # Compile a single table
@@ -43,73 +71,128 @@ tabwrap ./results_tables/
 # Output PNG with landscape orientation  
 tabwrap table.tex -p --landscape
 
-# Use short flags for common options
+# Batch process with combined PDF
 tabwrap ./tables/ -r -c    # recursive + combine PDFs
+
+# Show filename headers and keep intermediate files
+tabwrap data/ --header --keep-tex
 ```
 
-### All Options:
+## Features
 
-**Positional:**
-- `INPUT_PATH`: .tex file or directory to process (default: current directory)
+### Enhanced Error Handling
+```
+⚠️  1 of 3 files failed to compile:
 
-**Output Options:**
-- `-o, --output PATH`: Output directory (default: current directory)  
-- `-p, --png`: Output PNG instead of PDF
-- `--suffix TEXT`: Filename suffix (default: '_compiled')
+📋 Failed files:
+   • bad_table.tex
+     Invalid tabular content: No tabular environment found
 
-**Processing Options:**
-- `-r, --recursive`: Process subdirectories recursively
-- `-c, --combine-pdf`: Combine multiple PDFs with table of contents
-- `--landscape`: Use landscape orientation
-- `--no-resize`: Disable automatic table resizing
+✅ Successfully compiled: table1.tex, table2.tex
+```
 
-**Display Options:**
-- `--header`: Show filename as header in output
-- `--packages TEXT`: Comma-separated LaTeX packages (auto-detected if empty)
-- `--keep-tex`: Keep intermediate .tex files
+### Smart Package Detection
+Automatically detects and includes required packages:
+- `booktabs` for \\toprule, \\midrule, \\bottomrule
+- `tabularx` for \\begin{tabularx}
+- `siunitx` for \\SI{}{}, \\num{}
+- `multirow` for \\multirow
+- And many more...
 
-## Advanced Examples
-
+### Flexible Output Options
 ```bash
-# Recursive folder processing with combination
-tabwrap ./tables/ -r -c
-
-# Custom output location with filename headers  
-tabwrap table.tex -o ./output/ --header
-
-# PNG output with no file suffix
-tabwrap table.tex -p --suffix ""
-
-# Keep intermediate files and add custom packages
-tabwrap table.tex --keep-tex --packages "array,multirow"
-
-# Disable auto-resizing for exact table dimensions
-tabwrap table.tex --no-resize
+tabwrap table.tex -o output/          # Custom output directory
+tabwrap table.tex -p                  # PNG output  
+tabwrap table.tex --landscape         # Landscape orientation
+tabwrap table.tex --no-resize         # Disable auto-resizing
+tabwrap folder/ -c                     # Combine into single PDF
+tabwrap folder/ -r                     # Process recursively
 ```
 
-## Requirements
+## CLI Reference
 
-- Python 3.12+
-- `pdflatex` (part of any LaTeX distribution like TeX Live, MiKTeX)
+```
+Usage: tabwrap [INPUT] [OPTIONS]
+
+Arguments:
+  INPUT                    File or directory to process [default: current directory]
+
+Options:
+  -o, --output PATH        Output directory [default: current directory]
+  -p, --png                Output PNG instead of PDF
+  -c, --combine            Combine multiple PDFs with table of contents
+  -r, --recursive          Process subdirectories recursively
+  --landscape              Use landscape orientation
+  --no-resize              Disable automatic table resizing
+  --header                 Show filename as header in output
+  --keep-tex               Keep intermediate LaTeX files
+  --suffix TEXT            Custom output filename suffix [default: _compiled]
+  --packages TEXT          Additional LaTeX packages (comma-separated)
+  --help                   Show this message and exit
+```
+
+## API Usage
+
+For programmatic access:
+
+```python
+from tabwrap import TexCompiler
+
+compiler = TexCompiler()
+result = compiler.compile_tex(
+    input_path="table.tex",
+    output_dir="output/",
+    png=True,
+    landscape=True
+)
+print(f"Compiled to: {result}")
+```
 
 ## Research Workflow Integration
 
-**Stata**: Use `esttab` or `outreg2` to generate LaTeX fragments, then `tabwrap` for compilation
+### Stata
+```stata
+esttab using "regression_results.tex", replace booktabs
+! tabwrap regression_results.tex -p
+```
 
-**R**: Use `stargazer`, `xtable`, or `gt` table packages with LaTeX output
+### R
+```r
+library(xtable)
+xtable(model) %>% 
+  print(file = "model_table.tex", include.rownames = FALSE)
+system("tabwrap model_table.tex --landscape")
+```
 
-**Python**: Use `pandas.to_latex()` or `statsmodels` summary tables
+### Python
+```python
+df.to_latex("data_summary.tex", index=False)
+os.system("tabwrap data_summary.tex -p")
+```
 
-**Example workflow**:
+## Development
+
+### Contributing
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature-name`
+3. Make changes and add tests
+4. Run tests: `poetry run pytest`
+5. Submit a pull request
+
+### Development Setup
 ```bash
-# Generate tables from your analysis
-stata -b do analysis.do  # Creates table1.tex, table2.tex
+git clone https://github.com/janfasnacht/tabwrap.git
+cd tabwrap
+poetry install
+poetry run pytest  # Run tests
+```
 
-# Quick inspection
-tabwrap ./results/ -p
-
-# Final publication version
-tabwrap ./results/ -c --header
+### Building and Testing
+```bash
+poetry build                    # Build distribution packages
+poetry run tabwrap --help      # Test CLI
+make test                       # Run full test suite
+make test-coverage              # Generate coverage report
 ```
 
 ## License
