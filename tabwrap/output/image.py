@@ -85,9 +85,9 @@ def convert_pdf_to_svg(
 
         # Check if pdf2svg is available
         try:
-            subprocess.run(['pdf2svg', '--version'], 
-                          capture_output=True, check=True)
-        except (subprocess.CalledProcessError, FileNotFoundError):
+            subprocess.run(['pdf2svg', '--help'], 
+                          capture_output=True)
+        except FileNotFoundError:
             raise RuntimeError(
                 "pdf2svg not found. Install with: brew install pdf2svg (macOS) "
                 "or sudo apt-get install pdf2svg (Ubuntu)"
