@@ -45,7 +45,7 @@ from .core import TabWrap, CompilerMode
 @click.option(
     '--keep-tex',
     is_flag=True,
-    help="Keep intermediate .tex files"
+    help="Keep generated LaTeX files and compilation logs for debugging"
 )
 @click.option(
     '-p', '--png',
@@ -58,7 +58,7 @@ from .core import TabWrap, CompilerMode
     help="Output SVG instead of PDF"
 )
 @click.option(
-    '-c', '--combine-pdf',
+    '-c', '--combine',
     is_flag=True,
     help="Combine multiple PDFs with table of contents"
 )
@@ -72,6 +72,16 @@ from .core import TabWrap, CompilerMode
     type=click.Choice(['bash', 'zsh', 'fish']),
     help="Generate shell completion script"
 )
+@click.option(
+    '-j', '--parallel',
+    is_flag=True,
+    help="Process files in parallel for faster batch compilation"
+)
+@click.option(
+    '--max-workers',
+    type=int,
+    help="Maximum number of parallel workers (default: number of CPU cores)"
+)
 def main(
     input_path: str,
     output: str,
@@ -83,9 +93,11 @@ def main(
     keep_tex: bool,
     png: bool,
     svg: bool,
-    combine_pdf: bool,
+    combine: bool,
     recursive: bool,
-    completion: str
+    completion: str,
+    parallel: bool,
+    max_workers: int
 ) -> None:
     """Wrap LaTeX table fragments into complete documents.
     
@@ -108,8 +120,8 @@ def main(
         click.echo("Error: Cannot specify both --png and --svg", err=True)
         raise click.Abort()
     
-    if combine_pdf and (png or svg):
-        click.echo("Warning: --combine-pdf ignored when using --png or --svg output", err=True)
+    if combine and (png or svg):
+        click.echo("Warning: --combine ignored when using --png or --svg output", err=True)
     
     try:
         with TabWrap(mode=CompilerMode.CLI) as compiler:
@@ -124,8 +136,10 @@ def main(
                 keep_tex=keep_tex,
                 png=png,
                 svg=svg,
-                combine_pdf=combine_pdf,
-                recursive=recursive
+                combine_pdf=combine,
+                recursive=recursive,
+                parallel=parallel,
+                max_workers=max_workers
             )
             click.echo(f"Output saved to {output_path}")
     except Exception as e:

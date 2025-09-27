@@ -286,7 +286,7 @@ Table {i} & Column 2 & Column 3 \\\\
     
     # Should succeed but warn about combine being ignored
     assert result.exit_code == 0
-    assert "Warning: --combine-pdf ignored when using --png or --svg output" in result.output
+    assert "Warning: --combine ignored when using --png or --svg output" in result.output
     # Should call convert function for each file
     assert mock_convert_svg.call_count == 2
 

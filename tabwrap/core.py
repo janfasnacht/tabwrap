@@ -69,7 +69,9 @@ class TabWrap:
         png: bool = False,
         svg: bool = False,
         combine_pdf: bool = False,
-        recursive: bool = False
+        recursive: bool = False,
+        parallel: bool = False,
+        max_workers: int = None
     ) -> Path:
         """Compile TeX table(s) to PDF, PNG, or SVG."""
         # Check dependencies first
@@ -107,7 +109,9 @@ class TabWrap:
                 keep_tex=self.mode == CompilerMode.CLI and keep_tex,
                 png=png,
                 svg=svg,
-                combine_pdf=combine_pdf
+                combine_pdf=combine_pdf,
+                parallel=parallel,
+                max_workers=max_workers
             )
             
             # Handle results
@@ -150,6 +154,22 @@ class TabWrap:
         **options
     ) -> BatchCompilationResult:
         """Compile multiple files with error recovery."""
+        # Extract parallel options
+        parallel = options.pop('parallel', False)
+        max_workers = options.pop('max_workers', None)
+        
+        if parallel and len(tex_files) > 1:
+            return self._compile_batch_parallel(tex_files, output_dir, max_workers, **options)
+        else:
+            return self._compile_batch_sequential(tex_files, output_dir, **options)
+    
+    def _compile_batch_sequential(
+        self,
+        tex_files: List[Path],
+        output_dir: Path,
+        **options
+    ) -> BatchCompilationResult:
+        """Compile multiple files sequentially with error recovery."""
         successes = []
         failures = []
         
@@ -176,6 +196,58 @@ class TabWrap:
                 logger.error(f"❌ Failed: {tex_file.name} - {e}")
                 # Continue with next file instead of stopping
                 continue
+        
+        return BatchCompilationResult(successes=successes, failures=failures)
+    
+    def _compile_batch_parallel(
+        self,
+        tex_files: List[Path],
+        output_dir: Path,
+        max_workers: int = None,
+        **options
+    ) -> BatchCompilationResult:
+        """Compile multiple files in parallel with error recovery."""
+        import concurrent.futures
+        import os
+        
+        if max_workers is None:
+            max_workers = min(len(tex_files), os.cpu_count() or 1)
+        
+        successes = []
+        failures = []
+        
+        def compile_single_file(tex_file: Path) -> CompilationResult:
+            """Compile a single file (used by parallel executor)."""
+            try:
+                output_path = self._process_single_file(
+                    tex_file,
+                    output_dir,
+                    **options
+                )
+                logger.info(f"✅ Compiled: {tex_file.name}")
+                return CompilationResult(
+                    file=tex_file,
+                    success=True,
+                    output_path=output_path
+                )
+            except Exception as e:
+                logger.error(f"❌ Failed: {tex_file.name} - {e}")
+                return CompilationResult(
+                    file=tex_file,
+                    success=False,
+                    error=e
+                )
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_file = {executor.submit(compile_single_file, tex_file): tex_file 
+                             for tex_file in tex_files}
+            
+            for future in concurrent.futures.as_completed(future_to_file):
+                result = future.result()
+                if result.success:
+                    successes.append(result)
+                else:
+                    failures.append(result)
         
         return BatchCompilationResult(successes=successes, failures=failures)
 

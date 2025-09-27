@@ -101,12 +101,20 @@ Automatically detects and includes required packages:
 
 ### Flexible Output Options
 ```bash
-tabwrap table.tex -o output/          # Custom output directory
-tabwrap table.tex -p                  # PNG output  
+# Output formats
+tabwrap table.tex                     # PDF output (default)
+tabwrap table.tex -p                  # PNG output with auto-cropping
+tabwrap table.tex --svg               # SVG output (vector graphics)
+
+# Batch processing  
+tabwrap folder/ -r                    # Process subdirectories recursively
+tabwrap folder/ -j                    # Parallel processing (4-6x faster)
+tabwrap folder/ -c                    # Combine into single PDF with TOC
+
+# Layout and formatting
 tabwrap table.tex --landscape         # Landscape orientation
 tabwrap table.tex --no-resize         # Disable auto-resizing
-tabwrap folder/ -c                     # Combine into single PDF
-tabwrap folder/ -r                     # Process recursively
+tabwrap table.tex --header            # Show filename as header
 ```
 
 ### Shell Completion
@@ -126,23 +134,57 @@ tabwrap --completion fish > ~/.config/fish/completions/tabwrap.fish
 ## CLI Reference
 
 ```
-Usage: tabwrap [INPUT] [OPTIONS]
+Usage: tabwrap [OPTIONS] [INPUT_PATH]
 
 Arguments:
-  INPUT                    File or directory to process [default: current directory]
+  INPUT_PATH               .tex file or directory to process [default: current directory]
 
-Options:
+Output Options:
   -o, --output PATH        Output directory [default: current directory]
+  --suffix TEXT            Output filename suffix [default: _compiled]
   -p, --png                Output PNG instead of PDF
-  -c, --combine            Combine multiple PDFs with table of contents
+  --svg                    Output SVG instead of PDF
+
+Processing Options:
   -r, --recursive          Process subdirectories recursively
+  -j, --parallel           Process files in parallel for faster batch compilation
+  --max-workers INTEGER    Maximum number of parallel workers [default: CPU cores]
+  -c, --combine            Combine multiple PDFs with table of contents
+
+Formatting Options:
   --landscape              Use landscape orientation
   --no-resize              Disable automatic table resizing
   --header                 Show filename as header in output
-  --keep-tex               Keep intermediate LaTeX files
-  --suffix TEXT            Custom output filename suffix [default: _compiled]
-  --packages TEXT          Additional LaTeX packages (comma-separated)
+  --packages TEXT          Comma-separated LaTeX packages (auto-detected if empty)
+
+Advanced Options:
+  --keep-tex               Keep generated LaTeX files and compilation logs for debugging
+  --completion [bash|zsh|fish]  Generate shell completion script
   --help                   Show this message and exit
+```
+
+### Common Usage Patterns
+
+```bash
+# Basic compilation
+tabwrap table.tex                     # PDF output
+tabwrap table.tex -p                  # PNG output
+tabwrap table.tex --svg               # SVG output
+
+# Batch processing
+tabwrap folder/                       # All .tex files in folder
+tabwrap folder/ -r                    # Include subdirectories
+tabwrap folder/ -j                    # Parallel processing (faster)
+tabwrap folder/ -c                    # Combined PDF with TOC
+
+# Formatting options
+tabwrap table.tex --landscape         # Landscape orientation
+tabwrap table.tex --no-resize         # No auto-resizing
+tabwrap table.tex --header            # Show filename header
+
+# Output control
+tabwrap table.tex -o output/          # Custom output directory
+tabwrap table.tex --suffix _final     # Custom filename suffix
 ```
 
 ## API Usage
