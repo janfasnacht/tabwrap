@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Interactive Swagger UI at `/api/docs` and ReDoc at `/api/redoc`
 - Improved API error handling with proper HTTP status codes
 - Type-safe API endpoints with Pydantic models
+- Shell completion support for bash, zsh, and fish via `--completion` flag
 
 ### Changed
 - Migrated API from Flask-RESTX to FastAPI for better maintainability

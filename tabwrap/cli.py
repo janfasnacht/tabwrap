@@ -67,6 +67,11 @@ from .core import TabWrap, CompilerMode
     is_flag=True,
     help="Process subdirectories recursively"
 )
+@click.option(
+    '--completion',
+    type=click.Choice(['bash', 'zsh', 'fish']),
+    help="Generate shell completion script"
+)
 def main(
     input_path: str,
     output: str,
@@ -79,12 +84,24 @@ def main(
     png: bool,
     svg: bool,
     combine_pdf: bool,
-    recursive: bool
+    recursive: bool,
+    completion: str
 ) -> None:
     """Wrap LaTeX table fragments into complete documents.
     
     INPUT_PATH: .tex file or directory to process (default: current directory)
     """
+    
+    # Handle completion generation
+    if completion:
+        prog_name = 'tabwrap'
+        if completion == 'bash':
+            click.echo(f'eval "$(_TABWRAP_COMPLETE=bash_source {prog_name})"')
+        elif completion == 'zsh':
+            click.echo(f'eval "$(_TABWRAP_COMPLETE=zsh_source {prog_name})"')
+        elif completion == 'fish':
+            click.echo(f'eval (env _TABWRAP_COMPLETE=fish_source {prog_name})')
+        return
     
     # Validate argument combinations
     if png and svg:

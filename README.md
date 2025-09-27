@@ -22,14 +22,14 @@ Intercept & 1.23 & 0.045 \\
 ```
 
 And automatically wraps them into complete, compilable LaTeX documents with:
-- ✅ Auto-detected packages (booktabs, tabularx, siunitx, etc.)
-- ✅ Proper document structure and preambles  
-- ✅ Smart table resizing to fit pages
-- ✅ Multi-file batch processing with error recovery
-- ✅ Combined PDFs with table of contents
-- ✅ PNG output with automatic cropping
-- ✅ Landscape orientation and custom formatting
-- ✅ Enhanced error reporting with suggestions
+- Auto-detected packages (booktabs, tabularx, siunitx, etc.)
+- Proper document structure and preambles
+- Smart table resizing to fit pages
+- Multi-file batch processing with error recovery
+- Combined PDFs with table of contents
+- PNG output with automatic cropping
+- Landscape orientation and custom formatting
+- Enhanced error reporting with suggestions
 
 ## Quick Start
 
@@ -107,6 +107,20 @@ tabwrap table.tex --landscape         # Landscape orientation
 tabwrap table.tex --no-resize         # Disable auto-resizing
 tabwrap folder/ -c                     # Combine into single PDF
 tabwrap folder/ -r                     # Process recursively
+```
+
+### Shell Completion
+tabwrap supports shell completion for bash, zsh, and fish:
+
+```bash
+# Bash - add to ~/.bashrc
+tabwrap --completion bash >> ~/.bashrc
+
+# Zsh - add to ~/.zshrc  
+tabwrap --completion zsh >> ~/.zshrc
+
+# Fish - save to completions directory
+tabwrap --completion fish > ~/.config/fish/completions/tabwrap.fish
 ```
 
 ## CLI Reference
