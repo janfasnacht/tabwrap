@@ -3,19 +3,15 @@ from pathlib import Path
 import subprocess
 from typing import List, Optional, Union
 from enum import Enum
-from .utils.latex import (
+from .latex import (
     TexTemplates,
     detect_packages,
     clean_filename_for_display,
-    create_include_command
-)
-from .utils.validation import (
+    create_include_command,
     validate_tex_file,
     validate_output_dir,
     is_valid_tabular_content,
-    FileValidationError
-)
-from .utils.error_handling import (
+    FileValidationError,
     LaTeXErrorParser,
     check_latex_dependencies,
     validate_tex_content_syntax,
@@ -24,9 +20,9 @@ from .utils.error_handling import (
     CompilationResult,
     BatchCompilationResult
 )
-from .utils.file_handling import create_temp_dir, clean_up
-from .utils.image_processing import convert_pdf_to_cropped_png
-from .utils.logging import setup_logging
+from .io import create_temp_dir, clean_up
+from .output import convert_pdf_to_cropped_png
+from .config import setup_logging
 logger = setup_logging(module_name=__name__)
 
 

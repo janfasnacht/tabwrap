@@ -6,7 +6,7 @@ from click.testing import CliRunner
 from pathlib import Path
 from tabwrap.cli import main
 from tabwrap.core import TexCompiler, CompilerMode
-from tabwrap.utils.validation import FileValidationError
+from tabwrap.latex import FileValidationError
 
 
 @pytest.fixture
@@ -174,7 +174,7 @@ def test_web_mode_vs_cli_mode():
 
 def test_package_detection_accuracy(tmp_path):
     """Test accuracy of automatic package detection."""
-    from tabwrap.utils.latex import detect_packages
+    from tabwrap.latex import detect_packages
     
     # Test booktabs detection
     booktabs_content = r"""

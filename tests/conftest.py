@@ -2,7 +2,7 @@
 import pytest
 from click.testing import CliRunner
 from pathlib import Path
-from tabwrap.utils.logging import setup_logging
+from tabwrap.config import setup_logging
 
 @pytest.fixture
 def runner():

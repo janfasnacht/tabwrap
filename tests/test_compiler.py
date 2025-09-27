@@ -4,7 +4,7 @@
 import pytest
 from pathlib import Path
 from tabwrap.core import TexCompiler
-from tabwrap.utils.validation import FileValidationError
+from tabwrap.latex import FileValidationError
 
 
 @pytest.fixture

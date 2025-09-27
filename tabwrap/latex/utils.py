@@ -1,6 +1,6 @@
 # tex_compiler/utils/latex.py
 
-from .latex_templates import TexTemplates
+from .templates import TexTemplates
 from pathlib import Path
 from typing import Set
 

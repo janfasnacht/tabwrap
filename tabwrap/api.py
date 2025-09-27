@@ -14,8 +14,8 @@ from datetime import datetime
 import os
 
 from .core import TexCompiler, CompilerMode
-from .utils.validation import FileValidationError, is_valid_tabular_content
-from .utils.logging import setup_logging
+from .latex import FileValidationError, is_valid_tabular_content
+from .config import setup_logging
 logger = setup_logging(
     module_name=__name__,
     log_file=Path("logs") / f"api_{datetime.now():%Y%m%d}.log"

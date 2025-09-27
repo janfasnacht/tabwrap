@@ -8,7 +8,7 @@ from click.testing import CliRunner
 
 from tabwrap.cli import main
 from tabwrap.core import TexCompiler, CompilerMode
-from tabwrap.utils.error_handling import (
+from tabwrap.latex import (
     check_latex_dependencies,
     format_dependency_report,
     CompilationResult,
