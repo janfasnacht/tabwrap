@@ -6,7 +6,7 @@
 
 **Wrap LaTeX table fragments into complete documents for research workflows**
 
-A Python tool that transforms statistical programming output (LaTeX table fragments) into publication-ready PDFs and PNGs. Perfect for researchers who need to quickly inspect, share, and explore tables from Stata, R, Python, and other statistical tools.
+A simple Python tool that transforms statistical programming output (LaTeX table fragments) into compiled PDFs, PNGs, or SVGs. Perfect for researchers who need to quickly inspect, share, and explore tables from Stata, R, Python, and other statistical tools.
 
 ## What it does
 
@@ -27,13 +27,14 @@ And automatically wraps them into complete, compilable LaTeX documents with:
 - Smart table resizing to fit pages
 - Multi-file batch processing with error recovery
 - Combined PDFs with table of contents
-- PNG output with automatic cropping
+- PNG output with automatic cropping, SVG support
 - Landscape orientation and custom formatting
 - Enhanced error reporting with suggestions
 
 ## Quick Start
 
 ### Prerequisites
+
 **LaTeX Distribution Required:** tabwrap needs a LaTeX installation to compile documents.
 
 - **Windows**: [MiKTeX](https://miktex.org/download) or [TeX Live](https://tug.org/texlive/)
@@ -45,16 +46,19 @@ And automatically wraps them into complete, compilable LaTeX documents with:
 ### Installation
 
 #### Recommended (CLI tools):
+
 ```bash
 pipx install tabwrap
 ```
 
 #### Standard Python installation:
+
 ```bash
 pip install tabwrap
 ```
 
 #### With API support:
+
 ```bash
 pip install tabwrap[api]
 ```
@@ -68,7 +72,7 @@ tabwrap regression_table.tex
 # Process all tables in a folder
 tabwrap ./results_tables/
 
-# Output PNG with landscape orientation  
+# Output PNG with landscape orientation
 tabwrap table.tex -p --landscape
 
 # Batch process with combined PDF
@@ -80,7 +84,8 @@ tabwrap data/ --header --keep-tex
 
 ## Features
 
-### Enhanced Error Handling
+### Error Handling
+
 ```
 ⚠️  1 of 3 files failed to compile:
 
@@ -92,6 +97,7 @@ tabwrap data/ --header --keep-tex
 ```
 
 ### Smart Package Detection
+
 Automatically detects and includes required packages:
 - `booktabs` for \\toprule, \\midrule, \\bottomrule
 - `tabularx` for \\begin{tabularx}
@@ -100,13 +106,14 @@ Automatically detects and includes required packages:
 - And many more...
 
 ### Flexible Output Options
+
 ```bash
 # Output formats
 tabwrap table.tex                     # PDF output (default)
 tabwrap table.tex -p                  # PNG output with auto-cropping
 tabwrap table.tex --svg               # SVG output (vector graphics)
 
-# Batch processing  
+# Batch processing
 tabwrap folder/ -r                    # Process subdirectories recursively
 tabwrap folder/ -j                    # Parallel processing (4-6x faster)
 tabwrap folder/ -c                    # Combine into single PDF with TOC
@@ -118,13 +125,14 @@ tabwrap table.tex --header            # Show filename as header
 ```
 
 ### Shell Completion
+
 tabwrap supports shell completion for bash, zsh, and fish:
 
 ```bash
 # Bash - add to ~/.bashrc
 tabwrap --completion bash >> ~/.bashrc
 
-# Zsh - add to ~/.zshrc  
+# Zsh - add to ~/.zshrc
 tabwrap --completion zsh >> ~/.zshrc
 
 # Fish - save to completions directory
@@ -207,20 +215,23 @@ print(f"Compiled to: {result}")
 ## Research Workflow Integration
 
 ### Stata
+
 ```stata
 esttab using "regression_results.tex", replace booktabs
 ! tabwrap regression_results.tex -p
 ```
 
 ### R
+
 ```r
 library(xtable)
-xtable(model) %>% 
+xtable(model) %>%
   print(file = "model_table.tex", include.rownames = FALSE)
 system("tabwrap model_table.tex --landscape")
 ```
 
 ### Python
+
 ```python
 df.to_latex("data_summary.tex", index=False)
 os.system("tabwrap data_summary.tex -p")
@@ -229,6 +240,7 @@ os.system("tabwrap data_summary.tex -p")
 ## Development
 
 ### Contributing
+
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature-name`
 3. Make changes and add tests
@@ -236,6 +248,7 @@ os.system("tabwrap data_summary.tex -p")
 5. Submit a pull request
 
 ### Development Setup
+
 ```bash
 git clone https://github.com/janfasnacht/tabwrap.git
 cd tabwrap
@@ -244,6 +257,7 @@ poetry run pytest  # Run tests
 ```
 
 ### Building and Testing
+
 ```bash
 poetry build                    # Build distribution packages
 poetry run tabwrap --help      # Test CLI
