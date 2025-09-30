@@ -21,7 +21,7 @@ def detect_packages(tex_content: str) -> set[str]:
     # Define package detection rules: (commands, package)
     package_rules = [
         # Table-related packages
-        (["\\toprule", "\\midrule", "\\bottomrule"], "booktabs"),
+        (["\\toprule", "\\midrule", "\\cmidrule", "\\bottomrule"], "booktabs"),
         (["\\tabularx", "\\begin{tabularx}"], "tabularx"),
         (["\\longtable", "\\begin{longtable}"], "longtable"),
         (["\\multirow"], "multirow"),
