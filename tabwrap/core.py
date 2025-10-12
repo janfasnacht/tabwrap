@@ -258,10 +258,15 @@ class TabWrap:
         user_packages = [f"\\usepackage{{{pkg}}}" for pkg in options.get("packages", "").split(",") if pkg]
         all_packages = "\n".join(user_packages) + "\n" + "\n".join(detected_packages)
 
+        # Check if content uses longtable (can't be centered)
+        has_longtable = "\\begin{longtable}" in content
+
         # Add option-specific packages
         if not options.get("no_rescale"):
             all_packages += "\n\\usepackage{graphicx}"
-            content = r"\resizebox{\linewidth}{!}{" + content + "}"
+            # Don't wrap longtable in resizebox
+            if not has_longtable:
+                content = r"\resizebox{\linewidth}{!}{" + content + "}"
 
         # Add underscore package if filename contains underscores and show_filename is enabled
         underscore_package = ""
@@ -280,7 +285,12 @@ class TabWrap:
             geometry_options.append("landscape")
         geometry_package = f"\\usepackage[{','.join(geometry_options)}]{{geometry}}"
 
-        # Format final document
+        # Wrap content in center environment only if not using longtable
+        # longtable is a float-like environment and can't be centered this way
+        if not has_longtable:
+            content = r"\begin{center}" + "\n" + content + "\n" + r"\end{center}"
+
+        # Format final document (note: center wrapping removed from template)
         return TexTemplates.SINGLE_TABLE.format(
             packages=all_packages,
             underscore=underscore_package,

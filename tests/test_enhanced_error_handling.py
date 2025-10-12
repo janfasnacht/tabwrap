@@ -217,7 +217,7 @@ def test_all_files_fail_compilation(runner, tmp_path):
     
     # Should fail completely (all files invalid)
     assert result.exit_code != 0
-    assert "No tabular environment found" in result.output
+    assert "No supported table environment found" in result.output
     
     # No PDFs should be created
     assert not list(tmp_path.glob("*.pdf"))

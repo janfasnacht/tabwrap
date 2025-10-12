@@ -24,6 +24,8 @@ def detect_packages(tex_content: str) -> set[str]:
         (["\\toprule", "\\midrule", "\\bottomrule"], "booktabs"),
         (["\\tabularx", "\\begin{tabularx}"], "tabularx"),
         (["\\longtable", "\\begin{longtable}"], "longtable"),
+        (["\\threeparttable", "\\begin{threeparttable}"], "threeparttable"),
+        (["\\tablenotes", "\\begin{tablenotes}"], "threeparttable"),  # Part of threeparttable
         (["\\multirow"], "multirow"),
         (["\\multicolumn"], "multicol"),
         # Math and symbols

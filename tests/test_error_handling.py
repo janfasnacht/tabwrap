@@ -74,7 +74,7 @@ def test_invalid_tabular_content(runner, tmp_path):
         '-o', str(tmp_path)
     ])
     assert result.exit_code != 0
-    assert "No tabular environment found" in result.output
+    assert "No supported table environment found" in result.output
 
 
 def test_mismatched_tabular_tags(runner, tmp_path):
