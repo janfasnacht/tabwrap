@@ -25,7 +25,7 @@ def test_invalid_tabular_no_environment():
     content = "Just some text with no tabular"
     is_valid, error = is_valid_tabular_content(content)
     assert not is_valid
-    assert "No tabular environment found" in error
+    assert "No supported table environment found" in error
 
 
 def test_invalid_tabular_mismatched():

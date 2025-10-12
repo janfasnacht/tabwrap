@@ -14,9 +14,7 @@ class TexTemplates:
     \pagestyle{{{pagestyle}}}
     \begin{{document}}
     {header}
-    \begin{{center}}
     {content}
-    \end{{center}}
     \end{{document}}
     """
 

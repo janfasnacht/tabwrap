@@ -51,16 +51,29 @@ def validate_output_dir(dir_path: str | Path) -> Path:
 
 
 def is_valid_tabular_content(content: str) -> tuple[bool, str]:
-    """Check if content appears to be a valid LaTeX tabular environment."""
+    """
+    Check if content appears to be a valid LaTeX table environment.
+
+    Supports: tabular, tabularx, longtable, threeparttable
+
+    Args:
+        content: LaTeX content to validate
+
+    Returns:
+        Tuple of (is_valid, error_message)
+    """
     if not content.strip():
         return False, "Empty content"
 
-    # Check which tabular environments are present
+    # Check which table environments are present
     has_tabular = "\\begin{tabular}" in content
     has_tabularx = "\\begin{tabularx}" in content
+    has_longtable = "\\begin{longtable}" in content
+    has_threeparttable = "\\begin{threeparttable}" in content
 
-    if not (has_tabular or has_tabularx):
-        return False, "No tabular environment found"
+    # Must have at least one supported table environment
+    if not (has_tabular or has_tabularx or has_longtable or has_threeparttable):
+        return False, "No supported table environment found (tabular, tabularx, longtable, or threeparttable)"
 
     # Validate environment matching for each type that's present
     if has_tabular:
@@ -71,8 +84,21 @@ def is_valid_tabular_content(content: str) -> tuple[bool, str]:
         if content.count("\\begin{tabularx}") != content.count("\\end{tabularx}"):
             return False, "Mismatched tabularx environment tags"
 
-    # Check for column specification
-    if "{@" not in content and "{|" not in content and "{l" not in content and "{c" not in content and "{r" not in content:
-        return False, "Missing or invalid column specification"
+    if has_longtable:
+        if content.count("\\begin{longtable}") != content.count("\\end{longtable}"):
+            return False, "Mismatched longtable environment tags"
+
+    if has_threeparttable:
+        if content.count("\\begin{threeparttable}") != content.count("\\end{threeparttable}"):
+            return False, "Mismatched threeparttable environment tags"
+        # threeparttable must contain a table environment inside
+        if not (has_tabular or has_tabularx or has_longtable):
+            return False, "threeparttable must contain a table environment (tabular, tabularx, or longtable)"
+
+    # Check for column specification (required for all table types except threeparttable wrapper)
+    # For threeparttable, the inner environment will have the column spec
+    if not has_threeparttable or (has_tabular or has_tabularx or has_longtable):
+        if "{@" not in content and "{|" not in content and "{l" not in content and "{c" not in content and "{r" not in content:
+            return False, "Missing or invalid column specification"
 
     return True, ""
