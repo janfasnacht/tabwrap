@@ -5,13 +5,12 @@ table content for specific commands, environments, and column types.
 """
 
 import re
-from typing import Pattern
 
 
 class PackageRule:
     """Represents a package detection rule."""
 
-    def __init__(self, package: str, patterns: list[str] | None = None, regex: Pattern | None = None):
+    def __init__(self, package: str, patterns: list[str] | None = None, regex: re.Pattern | None = None):
         """
         Initialize a package detection rule.
 
@@ -51,10 +50,12 @@ PACKAGE_RULES = [
     PackageRule("booktabs", patterns=["\\toprule", "\\midrule", "\\cmidrule", "\\bottomrule"]),
     PackageRule("tabularx", patterns=["\\tabularx", "\\begin{tabularx}"]),
     PackageRule("longtable", patterns=["\\longtable", "\\begin{longtable}"]),
-    PackageRule("threeparttable", patterns=["\\threeparttable", "\\begin{threeparttable}", "\\tablenotes", "\\begin{tablenotes}"]),
+    PackageRule(
+        "threeparttable",
+        patterns=["\\threeparttable", "\\begin{threeparttable}", "\\tablenotes", "\\begin{tablenotes}"],
+    ),
     PackageRule("multirow", patterns=["\\multirow"]),
     PackageRule("multicol", patterns=["\\multicolumn"]),
-
     # Math and symbols - siunitx with both literal patterns and regex for S columns
     PackageRule(
         "siunitx",
@@ -64,17 +65,14 @@ PACKAGE_RULES = [
         # Matches patterns like: {lScr}, {SSS}, {S}, {lSc}, etc.
         # This catches cases where S appears between other column types without brackets
         # S[ is already caught by patterns above
-        regex=re.compile(r'{[lcrpX|@*\s]*S[lcrpSX|@*\s]*}')
+        regex=re.compile(r"{[lcrpX|@*\s]*S[lcrpSX|@*\s]*}"),
     ),
-
     PackageRule("amssymb", patterns=["\\checkmark"]),
     PackageRule("amsfonts", patterns=["\\mathbb"]),
     PackageRule("amsmath", patterns=["\\boldsymbol"]),
-
     # Graphics and color
     PackageRule("graphicx", patterns=["\\includegraphics"]),
     PackageRule("xcolor", patterns=["\\textcolor", "\\color"]),
-
     # Special characters and fonts
     PackageRule("url", patterns=["\\url"]),
 ]
