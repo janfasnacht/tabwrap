@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2025-10-18
+
+### Added
+- Support for `longtable` environment for multi-page tables
+- Support for `threeparttable` environment for tables with notes
+- Automatic detection of `\cmidrule` command for booktabs package
+- Automatic detection of siunitx `S` column types, including edge cases like `{lScr}` and `{S[table-format=1.3]}`
+
+### Fixed
+- longtable incompatibility with `\resizebox` and `\begin{center}` environments
+
+### Changed
+- Refactored package detection into dedicated module with regex-based pattern matching
+
 ## [1.0.1] - 2025-09-27
 
 ### Changed
