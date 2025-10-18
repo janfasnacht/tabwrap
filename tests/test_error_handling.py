@@ -201,7 +201,7 @@ Column 1 & Column 2 & Column 3 \\
     assert r"\usepackage{booktabs}" in packages
     assert r"\usepackage{tabularx}" in packages
     
-    # Test siunitx detection
+    # Test siunitx detection with \SI and \num
     siunitx_content = r"""
 \begin{tabular}{lcr}
 \toprule
@@ -212,6 +212,45 @@ Value & Unit & Result \\
 \end{tabular}
 """
     packages = detect_packages(siunitx_content)
+    assert r"\usepackage{siunitx}" in packages
+
+    # Test siunitx detection with S column
+    siunitx_s_column = r"""
+\begin{tabular}{lS[table-format=1.3]S}
+\toprule
+Variable & {Mean} & {SD} \\
+\midrule
+Age & 45.123 & 12.456 \\
+\bottomrule
+\end{tabular}
+"""
+    packages = detect_packages(siunitx_s_column)
+    assert r"\usepackage{siunitx}" in packages
+
+    # Test siunitx detection with {S} column syntax
+    siunitx_s_simple = r"""
+\begin{tabular}{lSSS}
+\toprule
+Variable & {A} & {B} & {C} \\
+\bottomrule
+\end{tabular}
+"""
+    packages = detect_packages(siunitx_s_simple)
+    assert r"\usepackage{siunitx}" in packages
+
+    # Test siunitx detection with \sisetup
+    siunitx_setup = r"""
+\sisetup{
+    input-symbols = () [],
+    table-space-text-post = ***,
+}
+\begin{tabular}{lS}
+\toprule
+Variable & {Value} \\
+\bottomrule
+\end{tabular}
+"""
+    packages = detect_packages(siunitx_setup)
     assert r"\usepackage{siunitx}" in packages
 
 
