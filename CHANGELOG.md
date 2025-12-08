@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2025-12-08
+
+### Added
+- API rate limiting via SlowAPI (configurable per-IP limits, default: 10/min, 100/hour)
+- Environment configuration via `TABWRAP_*` variables (CORS, rate limits, log level)
+- Gunicorn production server configuration
+- Smoke test script for post-deployment validation
+- Locust load testing infrastructure
+
+### Changed
+- API error responses: HTTP 400 for user errors (invalid LaTeX, missing packages), HTTP 500 for system errors
+- API version determined dynamically from package metadata
+- LaTeX compilation now parses log files even when pdflatex returns exit code 0
+
+### Fixed
+- Compilation edge cases where pdflatex appeared successful but log contained errors
+
 ## [1.1.0] - 2025-10-18
 
 ### Added
