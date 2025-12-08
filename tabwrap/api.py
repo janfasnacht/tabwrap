@@ -1,9 +1,12 @@
 # tabwrap/api.py
 try:
-    from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+    from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import FileResponse
     from pydantic import BaseModel, Field
+    from slowapi import Limiter, _rate_limit_exceeded_handler
+    from slowapi.errors import RateLimitExceeded
+    from slowapi.util import get_remote_address
 except ImportError as e:
     raise ImportError("API dependencies not installed. Install with: pip install tabwrap[api]") from e
 
@@ -11,9 +14,17 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
+try:
+    from importlib.metadata import version as get_version
+
+    __version__ = get_version("tabwrap")
+except Exception:
+    __version__ = "1.1.0"  # Fallback version
+
 from .config import setup_logging
 from .core import CompilerMode, TabWrap
 from .latex import FileValidationError, is_valid_tabular_content
+from .settings import Settings
 
 logger = setup_logging(module_name=__name__, log_file=Path("logs") / f"api_{datetime.now():%Y%m%d}.log")
 
@@ -21,7 +32,7 @@ logger = setup_logging(module_name=__name__, log_file=Path("logs") / f"api_{date
 # Pydantic Models
 class HealthResponse(BaseModel):
     status: str = "healthy"
-    version: str = "1.0.0"
+    version: str = __version__
 
 
 class CompileOptions(BaseModel):
@@ -41,22 +52,58 @@ class ErrorResponse(BaseModel):
 
 def create_app():
     """Create FastAPI application."""
+    # Load settings from environment
+    settings = Settings()
+
+    # Initialize rate limiter
+    limiter = Limiter(key_func=get_remote_address, default_limits=[settings.rate_limit_per_hour])
+
     app = FastAPI(
         title="TabWrap API",
         description="LaTeX table fragment compilation API with automatic OpenAPI documentation",
-        version="1.0.0",
+        version=__version__,
         docs_url="/api/docs",
         redoc_url="/api/redoc",
     )
 
+    # Register rate limiter
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
     # Add CORS middleware
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],  # Configure appropriately for production
+        allow_origins=settings.cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    def classify_compilation_error(error_msg: str) -> tuple[int, str]:
+        """
+        Classify compilation errors as user errors (400) or system errors (500).
+
+        User errors are typically caused by invalid LaTeX syntax, missing packages,
+        or malformed table content. System errors are unexpected failures in the
+        compilation pipeline.
+        """
+        user_error_patterns = [
+            "Invalid tabular",
+            "No tabular environment",
+            "Missing package",
+            "undefined control sequence",
+            "package not found",
+            "! LaTeX Error",
+            "! Missing",
+            "Invalid LaTeX content",
+        ]
+
+        error_lower = error_msg.lower()
+        for pattern in user_error_patterns:
+            if pattern.lower() in error_lower:
+                return 400, f"LaTeX compilation error: {error_msg}"
+
+        return 500, f"System error: {error_msg}"
 
     @app.get("/api/health", response_model=HealthResponse, tags=["Health"])
     async def health_check():
@@ -70,10 +117,13 @@ def create_app():
         responses={
             200: {"description": "Compiled file", "content": {"application/pdf": {}, "image/png": {}, "image/svg+xml": {}}},
             400: {"model": ErrorResponse, "description": "Bad Request - Invalid input"},
+            429: {"model": ErrorResponse, "description": "Too Many Requests - Rate limit exceeded"},
             500: {"model": ErrorResponse, "description": "Internal Server Error - Compilation failed"},
         },
     )
+    @limiter.limit(settings.rate_limit_per_minute)
     async def compile_table(
+        request: Request,
         file: UploadFile = File(..., description="LaTeX table file (.tex)"),
         packages: str = Form("", description="Comma-separated LaTeX packages"),
         landscape: bool = Form(False, description="Use landscape orientation"),
@@ -140,12 +190,10 @@ def create_app():
                     except FileValidationError as e:
                         raise HTTPException(status_code=400, detail=f"Invalid file content: {str(e)}")
                     except RuntimeError as e:
-                        # Check if it's a validation error
+                        # Classify error as user (400) or system (500) error
                         error_msg = str(e)
-                        if any(phrase in error_msg for phrase in ["Invalid tabular content", "No tabular environment found"]):
-                            raise HTTPException(status_code=400, detail=f"Invalid LaTeX content: {error_msg}")
-                        else:
-                            raise HTTPException(status_code=500, detail=f"Compilation failed: {error_msg}")
+                        status_code, detail = classify_compilation_error(error_msg)
+                        raise HTTPException(status_code=status_code, detail=detail)
 
                 # Determine content type and filename
                 stem = Path(file.filename).stem

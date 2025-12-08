@@ -328,6 +328,11 @@ class TabWrap:
             with open(compiled_tex_path, "w") as f:
                 f.write(full_tex)
 
+            # Remove any existing PDF to ensure clean compilation check
+            pdf_path = output_dir / (tex_file.stem + suffix + ".pdf")
+            if pdf_path.exists():
+                pdf_path.unlink()
+
             # Run pdflatex
             result = subprocess.run(
                 ["pdflatex", "-interaction=nonstopmode", "-output-directory", str(output_dir), str(compiled_tex_path)],
@@ -335,23 +340,18 @@ class TabWrap:
                 text=True,
             )
 
-            if result.returncode != 0:
-                # Parse LaTeX log for better error messages
-                log_path = output_dir / (tex_file.stem + suffix + ".log")
-                if log_path.exists():
-                    log_content = log_path.read_text()
-                    errors = LaTeXErrorParser.parse_latex_log(log_content, tex_file)
-                    if errors:
-                        error_report = LaTeXErrorParser.format_error_report(errors)
-                        raise RuntimeError(f"LaTeX compilation failed:\n{error_report}")
+            # Check compilation success by parsing log and verifying PDF creation
+            log_path = output_dir / (tex_file.stem + suffix + ".log")
+            log_content = log_path.read_text() if log_path.exists() else ""
+            errors = LaTeXErrorParser.parse_latex_log(log_content, tex_file) if log_content else []
 
-                # Fallback to basic error message
+            if errors:
+                error_report = LaTeXErrorParser.format_error_report(errors)
+                raise RuntimeError(f"LaTeX compilation failed:\n{error_report}")
+
+            if not pdf_path.exists():
                 stderr_msg = result.stderr.strip() if result.stderr.strip() else "Unknown compilation error"
                 raise RuntimeError(f"LaTeX compilation failed: {stderr_msg}")
-
-            pdf_path = output_dir / (tex_file.stem + suffix + ".pdf")
-            if not pdf_path.exists():
-                raise RuntimeError("PDF file not generated despite successful compilation")
 
             # Convert to PNG if requested
             if options.get("png"):
@@ -411,6 +411,11 @@ class TabWrap:
             with open(combined_tex_path, "w") as f:
                 f.write(combined_tex)
 
+            # Remove any existing PDF to ensure clean compilation check
+            combined_pdf_path = output_dir / "tex_tables_combined.pdf"
+            if combined_pdf_path.exists():
+                combined_pdf_path.unlink()
+
             # Compile twice for table of contents
             for _ in range(2):
                 result = subprocess.run(
@@ -418,23 +423,19 @@ class TabWrap:
                     capture_output=True,
                     text=True,
                 )
-                if result.returncode != 0:
-                    # Parse LaTeX log for better error messages
-                    log_path = output_dir / "tex_tables_combined.log"
-                    if log_path.exists():
-                        log_content = log_path.read_text()
-                        errors = LaTeXErrorParser.parse_latex_log(log_content, combined_tex_path)
-                        if errors:
-                            error_report = LaTeXErrorParser.format_error_report(errors)
-                            raise RuntimeError(f"Combined PDF compilation failed:\n{error_report}")
 
-                    # Fallback to basic error message
-                    stderr_msg = result.stderr.strip() if result.stderr.strip() else "Unknown compilation error"
-                    raise RuntimeError(f"Combined PDF compilation failed: {stderr_msg}")
+            # Check compilation success by parsing log and verifying PDF creation
+            log_path = output_dir / "tex_tables_combined.log"
+            log_content = log_path.read_text() if log_path.exists() else ""
+            errors = LaTeXErrorParser.parse_latex_log(log_content, combined_tex_path) if log_content else []
 
-            combined_pdf_path = output_dir / "tex_tables_combined.pdf"
+            if errors:
+                error_report = LaTeXErrorParser.format_error_report(errors)
+                raise RuntimeError(f"Combined PDF compilation failed:\n{error_report}")
+
             if not combined_pdf_path.exists():
-                raise RuntimeError("Combined PDF not generated")
+                stderr_msg = result.stderr.strip() if result.stderr.strip() else "Unknown compilation error"
+                raise RuntimeError(f"Combined PDF compilation failed: {stderr_msg}")
 
             return combined_pdf_path
 

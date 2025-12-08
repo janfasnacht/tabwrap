@@ -1,16 +1,20 @@
 # tests/conftest.py
+
 import pytest
 from click.testing import CliRunner
-from pathlib import Path
+
 from tabwrap.config import setup_logging
+
 
 @pytest.fixture
 def runner():
     return CliRunner()
 
+
 @pytest.fixture
 def test_logger():
     return setup_logging(level="DEBUG", module_name="tabwrap.test")
+
 
 @pytest.fixture
 def sample_tex(tmp_path):
@@ -28,6 +32,7 @@ Column 1 & Column 2 & Column 3 \\
     tex_file = tmp_path / "test_table.tex"
     tex_file.write_text(tex_content)
     return tex_file
+
 
 @pytest.fixture
 def output_dir(tmp_path):

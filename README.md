@@ -8,6 +8,8 @@
 
 A simple Python tool that transforms statistical programming output (LaTeX table fragments) into compiled PDFs, PNGs, or SVGs. Perfect for researchers who need to quickly inspect, share, and explore tables from Stata, R, Python, and other statistical tools.
 
+🌐 **Web Interface**: Try the browser-based interface at [tabwrap.janfasnacht.com](https://tabwrap.janfasnacht.com) (coming soon!)
+
 ## What it does
 
 `tabwrap` takes incomplete LaTeX table fragments like this:
@@ -197,6 +199,7 @@ tabwrap table.tex --suffix _final     # Custom filename suffix
 
 ## API Usage
 
+### Python Library
 For programmatic access:
 
 ```python
@@ -211,6 +214,23 @@ result = compiler.compile_tex(
 )
 print(f"Compiled to: {result}")
 ```
+
+### Web API
+Run the FastAPI server for web applications:
+
+```bash
+# Install with API dependencies
+pip install tabwrap[api]
+
+# Start the API server
+python -m tabwrap.api
+
+# API endpoints
+# GET  /api/health - Service health check
+# POST /api/compile - Compile LaTeX table fragment
+```
+
+See [tabwrap-web](https://github.com/janfasnacht/tabwrap-web) for a React frontend using this API.
 
 ## Research Workflow Integration
 

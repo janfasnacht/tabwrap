@@ -3,9 +3,7 @@
 Tests for longtable and threeparttable environment support.
 """
 
-import pytest
-from pathlib import Path
-from tabwrap.latex import is_valid_tabular_content, detect_packages
+from tabwrap.latex import detect_packages, is_valid_tabular_content
 
 
 class TestLongtableValidation:
