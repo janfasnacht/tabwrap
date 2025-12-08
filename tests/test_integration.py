@@ -1,6 +1,7 @@
 # tests/test_integration.py
 from tabwrap.core import TabWrap
 
+
 def test_complex_table(tmp_path):
     content = r"""
     \begin{tabular}{@{}l*{3}{c}@{}}
@@ -24,9 +25,6 @@ def test_complex_table(tmp_path):
     tex_file.write_text(content)
 
     compiler = TabWrap()
-    output = compiler.compile_tex(
-        input_path=tex_file,
-        output_dir=tmp_path
-    )
+    output = compiler.compile_tex(input_path=tex_file, output_dir=tmp_path)
     assert output.exists()
     assert (tmp_path / "complex_table_compiled.pdf").exists()

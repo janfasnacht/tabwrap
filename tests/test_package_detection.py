@@ -1,6 +1,5 @@
 """Comprehensive tests for package detection, especially edge cases."""
 
-import pytest
 from tabwrap.latex.package_detection import detect_packages
 
 

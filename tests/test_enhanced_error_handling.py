@@ -1,19 +1,20 @@
 # tests/test_enhanced_error_handling.py
 """Tests for enhanced error handling with multi-file support."""
 
-import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
+
+import pytest
 from click.testing import CliRunner
 
 from tabwrap.cli import main
-from tabwrap.core import TabWrap, CompilerMode
+from tabwrap.core import TabWrap
 from tabwrap.latex import (
+    BatchCompilationResult,
+    CompilationResult,
+    LaTeXErrorParser,
     check_latex_dependencies,
     format_dependency_report,
-    CompilationResult,
-    BatchCompilationResult,
-    LaTeXErrorParser
 )
 
 
@@ -25,28 +26,28 @@ def runner():
 def test_dependency_checking():
     """Test LaTeX dependency checking."""
     deps = check_latex_dependencies()
-    
+
     # Should return a dict with at least pdflatex and convert
     assert isinstance(deps, dict)
-    assert 'pdflatex' in deps
-    assert 'convert' in deps
-    
+    assert "pdflatex" in deps
+    assert "convert" in deps
+
     # Values should be booleans
-    assert isinstance(deps['pdflatex'], bool)
-    assert isinstance(deps['convert'], bool)
+    assert isinstance(deps["pdflatex"], bool)
+    assert isinstance(deps["convert"], bool)
 
 
 def test_dependency_report_formatting():
     """Test dependency report formatting."""
     # Test with all available
-    deps_good = {'pdflatex': True, 'convert': True}
+    deps_good = {"pdflatex": True, "convert": True}
     report = format_dependency_report(deps_good)
     assert "✅ All dependencies satisfied!" in report
     assert "✅ pdflatex" in report
     assert "✅ convert" in report
-    
+
     # Test with missing dependencies
-    deps_bad = {'pdflatex': False, 'convert': False}
+    deps_bad = {"pdflatex": False, "convert": False}
     report = format_dependency_report(deps_bad)
     assert "⚠️  2 dependencies missing" in report
     assert "❌ pdflatex" in report
@@ -57,14 +58,14 @@ def test_dependency_report_formatting():
 def test_compiler_dependency_check():
     """Test compiler dependency checking."""
     compiler = TabWrap()
-    
+
     # Mock missing pdflatex
-    with patch('tabwrap.core.check_latex_dependencies') as mock_check:
-        mock_check.return_value = {'pdflatex': False, 'convert': True}
-        
+    with patch("tabwrap.core.check_latex_dependencies") as mock_check:
+        mock_check.return_value = {"pdflatex": False, "convert": True}
+
         with pytest.raises(RuntimeError) as excinfo:
             compiler.check_dependencies()
-        
+
         assert "pdflatex is required but not found" in str(excinfo.value)
         assert "LaTeX Dependencies:" in str(excinfo.value)
 
@@ -72,39 +73,31 @@ def test_compiler_dependency_check():
 def test_compiler_dependency_check_png():
     """Test compiler dependency checking for PNG output."""
     compiler = TabWrap()
-    
+
     # Mock missing convert for PNG
-    with patch('tabwrap.core.check_latex_dependencies') as mock_check:
-        mock_check.return_value = {'pdflatex': True, 'convert': False}
-        
+    with patch("tabwrap.core.check_latex_dependencies") as mock_check:
+        mock_check.return_value = {"pdflatex": True, "convert": False}
+
         # Should pass without PNG requirement
         compiler.check_dependencies(require_convert=False)
-        
+
         # Should fail with PNG requirement
         with pytest.raises(RuntimeError) as excinfo:
             compiler.check_dependencies(require_convert=True)
-        
+
         assert "ImageMagick 'convert' is required for PNG output" in str(excinfo.value)
 
 
 def test_compilation_result():
     """Test CompilationResult dataclass."""
-    success_result = CompilationResult(
-        file=Path("test.tex"),
-        success=True,
-        output_path=Path("test.pdf")
-    )
-    
+    success_result = CompilationResult(file=Path("test.tex"), success=True, output_path=Path("test.pdf"))
+
     assert success_result.success
     assert success_result.output_path == Path("test.pdf")
     assert success_result.error is None
-    
-    failure_result = CompilationResult(
-        file=Path("bad.tex"),
-        success=False,
-        error=RuntimeError("Test error")
-    )
-    
+
+    failure_result = CompilationResult(file=Path("bad.tex"), success=False, error=RuntimeError("Test error"))
+
     assert not failure_result.success
     assert failure_result.output_path is None
     assert isinstance(failure_result.error, RuntimeError)
@@ -116,25 +109,25 @@ def test_batch_compilation_result():
         CompilationResult(Path("good1.tex"), True, Path("good1.pdf")),
         CompilationResult(Path("good2.tex"), True, Path("good2.pdf")),
     ]
-    
+
     failures = [
         CompilationResult(Path("bad1.tex"), False, error=RuntimeError("Error 1")),
         CompilationResult(Path("bad2.tex"), False, error=RuntimeError("Error 2")),
     ]
-    
+
     batch_result = BatchCompilationResult(successes=successes, failures=failures)
-    
+
     assert batch_result.success_count == 2
     assert batch_result.failure_count == 2
     assert batch_result.total_count == 4
     assert batch_result.has_failures
     assert not batch_result.all_failed
-    
+
     # Test all successful
     all_success = BatchCompilationResult(successes=successes, failures=[])
     assert not all_success.has_failures
     assert not all_success.all_failed
-    
+
     # Test all failed
     all_failed = BatchCompilationResult(successes=[], failures=failures)
     assert all_failed.has_failures
@@ -148,7 +141,7 @@ def test_batch_result_formatting():
     all_success = BatchCompilationResult(successes=successes, failures=[])
     report = LaTeXErrorParser.format_batch_result(all_success)
     assert "✅ All 1 files compiled successfully!" in report
-    
+
     # Partial failures
     failures = [CompilationResult(Path("bad.tex"), False, error=RuntimeError("Test error"))]
     partial = BatchCompilationResult(successes=successes, failures=failures)
@@ -157,7 +150,7 @@ def test_batch_result_formatting():
     assert "📋 Failed files:" in report
     assert "bad.tex" in report
     assert "✅ Successfully compiled: good.tex" in report
-    
+
     # All failed
     all_failed = BatchCompilationResult(successes=[], failures=failures)
     report = LaTeXErrorParser.format_batch_result(all_failed)
@@ -177,7 +170,7 @@ Column 1 & Column 2 & Column 3 \\
 \end{tabular}
 """
     (tmp_path / "good.tex").write_text(good_tex)
-    
+
     # Create bad file (missing \end{tabular})
     bad_tex = r"""
 \begin{tabular}{lcr}
@@ -188,13 +181,10 @@ Column 1 & Column 2 & Column 3 \\
 \bottomrule
 """
     (tmp_path / "bad.tex").write_text(bad_tex)
-    
+
     # Run compilation - should succeed partially
-    result = runner.invoke(main, [
-        str(tmp_path),
-        '-o', str(tmp_path)
-    ])
-    
+    result = runner.invoke(main, [str(tmp_path), "-o", str(tmp_path)])
+
     # Should succeed (partial success) and show warnings
     # The good file should compile, bad file should fail
     assert result.exit_code == 0  # Partial success
@@ -208,17 +198,14 @@ def test_all_files_fail_compilation(runner, tmp_path):
     for i in range(3):
         bad_tex = f"This is not valid LaTeX content for Bad File {i}"
         (tmp_path / f"bad_{i}.tex").write_text(bad_tex)
-    
+
     # Run compilation - should fail completely
-    result = runner.invoke(main, [
-        str(tmp_path),
-        '-o', str(tmp_path)
-    ])
-    
+    result = runner.invoke(main, [str(tmp_path), "-o", str(tmp_path)])
+
     # Should fail completely (all files invalid)
     assert result.exit_code != 0
     assert "No supported table environment found" in result.output
-    
+
     # No PDFs should be created
     assert not list(tmp_path.glob("*.pdf"))
 
@@ -236,16 +223,13 @@ Column 1 & Column 2 & Column 3 \\
 """
     tex_file = tmp_path / "test.tex"
     tex_file.write_text(tex_content)
-    
+
     # Mock pdflatex as missing in the core module where it's imported
-    with patch('tabwrap.core.check_latex_dependencies') as mock_check:
-        mock_check.return_value = {'pdflatex': False, 'convert': True}
-        
-        result = runner.invoke(main, [
-            str(tex_file),
-            '-o', str(tmp_path)
-        ])
-        
+    with patch("tabwrap.core.check_latex_dependencies") as mock_check:
+        mock_check.return_value = {"pdflatex": False, "convert": True}
+
+        result = runner.invoke(main, [str(tex_file), "-o", str(tmp_path)])
+
         assert result.exit_code != 0
         assert "pdflatex is required but not found" in result.output
         assert "LaTeX Dependencies:" in result.output
@@ -264,23 +248,24 @@ Column 1 & Column 2 & Column 3 \\
 """
     tex_file = tmp_path / "test.tex"
     tex_file.write_text(tex_content)
-    
+
     # Mock convert as missing for PNG output
-    with patch('tabwrap.core.check_latex_dependencies') as mock_check:
-        mock_check.return_value = {'pdflatex': True, 'convert': False}
-        
+    with patch("tabwrap.core.check_latex_dependencies") as mock_check:
+        mock_check.return_value = {"pdflatex": True, "convert": False}
+
         # PDF should work
-        result = runner.invoke(main, [
-            str(tex_file),
-            '-o', str(tmp_path)
-        ])
+        result = runner.invoke(main, [str(tex_file), "-o", str(tmp_path)])
         assert result.exit_code == 0
-        
+
         # PNG should fail
-        result = runner.invoke(main, [
-            str(tex_file),
-            '-o', str(tmp_path),
-            '-p'  # PNG output
-        ])
+        result = runner.invoke(
+            main,
+            [
+                str(tex_file),
+                "-o",
+                str(tmp_path),
+                "-p",  # PNG output
+            ],
+        )
         assert result.exit_code != 0
         assert "ImageMagick 'convert' is required for PNG output" in result.output

@@ -1,7 +1,5 @@
 # tests/test_validation.py
 
-import pytest
-from pathlib import Path
 from tabwrap.latex import is_valid_tabular_content
 
 

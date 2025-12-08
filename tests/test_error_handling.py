@@ -3,10 +3,9 @@
 
 import pytest
 from click.testing import CliRunner
-from pathlib import Path
+
 from tabwrap.cli import main
-from tabwrap.core import TabWrap, CompilerMode
-from tabwrap.latex import FileValidationError
+from tabwrap.core import CompilerMode, TabWrap
 
 
 @pytest.fixture
@@ -28,36 +27,29 @@ Column 1 & Column 2 & Column 3 \\
 """
     tex_file = tmp_path / "invalid.tex"
     tex_file.write_text(invalid_tex)
-    
-    result = runner.invoke(main, [
-        str(tex_file),
-        '-o', str(tmp_path)
-    ])
+
+    result = runner.invoke(main, [str(tex_file), "-o", str(tmp_path)])
     assert result.exit_code != 0
     # The error could be caught at validation or LaTeX compilation stage
     # With enhanced error handling, we now get batch results format
-    assert ("Invalid tabular content" in result.output or 
-            "Syntax issues" in result.output or 
-            "LaTeX compilation failed" in result.output or
-            "files failed to compile" in result.output)
+    assert (
+        "Invalid tabular content" in result.output
+        or "Syntax issues" in result.output
+        or "LaTeX compilation failed" in result.output
+        or "files failed to compile" in result.output
+    )
     test_logger.info(f"Error output: {result.output}")
 
 
 def test_missing_file(runner, tmp_path):
     """Test handling of non-existent file."""
-    result = runner.invoke(main, [
-        str(tmp_path / "nonexistent.tex"),
-        '-o', str(tmp_path)
-    ])
+    result = runner.invoke(main, [str(tmp_path / "nonexistent.tex"), "-o", str(tmp_path)])
     assert result.exit_code != 0
 
 
 def test_empty_directory(runner, tmp_path):
     """Test handling of directory with no .tex files."""
-    result = runner.invoke(main, [
-        str(tmp_path),
-        '-o', str(tmp_path)
-    ])
+    result = runner.invoke(main, [str(tmp_path), "-o", str(tmp_path)])
     assert result.exit_code != 0
     assert "No .tex files found" in result.output
 
@@ -68,11 +60,8 @@ def test_invalid_tabular_content(runner, tmp_path):
     invalid_content = "This is just text, no table here."
     tex_file = tmp_path / "no_table.tex"
     tex_file.write_text(invalid_content)
-    
-    result = runner.invoke(main, [
-        str(tex_file),
-        '-o', str(tmp_path)
-    ])
+
+    result = runner.invoke(main, [str(tex_file), "-o", str(tmp_path)])
     assert result.exit_code != 0
     assert "No supported table environment found" in result.output
 
@@ -93,16 +82,15 @@ More content
 """
     tex_file = tmp_path / "mismatched.tex"
     tex_file.write_text(mismatched_tex)
-    
-    result = runner.invoke(main, [
-        str(tex_file),
-        '-o', str(tmp_path)
-    ])
+
+    result = runner.invoke(main, [str(tex_file), "-o", str(tmp_path)])
     assert result.exit_code != 0
     # Could be validation error or LaTeX compilation error
-    assert ("Mismatched tabular" in result.output or 
-            "LaTeX compilation failed" in result.output or
-            "files failed to compile" in result.output)
+    assert (
+        "Mismatched tabular" in result.output
+        or "LaTeX compilation failed" in result.output
+        or "files failed to compile" in result.output
+    )
 
 
 def test_latex_compilation_error(runner, tmp_path, test_logger):
@@ -119,17 +107,12 @@ Column 1 & Column 2 & Column 3 \\
 """
     tex_file = tmp_path / "latex_error.tex"
     tex_file.write_text(error_tex)
-    
-    result = runner.invoke(main, [
-        str(tex_file),
-        '-o', str(tmp_path),
-        '--keep-tex'
-    ])
+
+    result = runner.invoke(main, [str(tex_file), "-o", str(tmp_path), "--keep-tex"])
     if result.exit_code != 0:
         test_logger.info(f"Expected LaTeX error: {result.output}")
         # Check that we get a useful error message with enhanced error handling
-        assert ("LaTeX compilation failed" in result.output or 
-                "files failed to compile" in result.output)
+        assert "LaTeX compilation failed" in result.output or "files failed to compile" in result.output
     else:
         # Some LaTeX installations might be more permissive
         test_logger.warning("LaTeX error was not caught - installation may be permissive")
@@ -148,14 +131,11 @@ Column 1 & Column 2 & Column 3 \\
 \end{tabular}
 """
     (tmp_path / "source.tex").write_text(tex_content)
-    
+
     # Create an already compiled file
     (tmp_path / "source_compiled.tex").write_text("Already compiled content")
-    
-    result = runner.invoke(main, [
-        str(tmp_path),
-        '-o', str(tmp_path)
-    ])
+
+    result = runner.invoke(main, [str(tmp_path), "-o", str(tmp_path)])
     assert result.exit_code == 0
     # Should only process source.tex, not source_compiled.tex
     assert (tmp_path / "source_compiled.pdf").exists()
@@ -167,7 +147,7 @@ def test_web_mode_vs_cli_mode():
     """Test differences between web and CLI modes."""
     compiler_cli = TabWrap(CompilerMode.CLI)
     compiler_web = TabWrap(CompilerMode.WEB)
-    
+
     assert compiler_cli.mode == CompilerMode.CLI
     assert compiler_web.mode == CompilerMode.WEB
 
@@ -175,7 +155,7 @@ def test_web_mode_vs_cli_mode():
 def test_package_detection_accuracy(tmp_path):
     """Test accuracy of automatic package detection."""
     from tabwrap.latex import detect_packages
-    
+
     # Test booktabs detection
     booktabs_content = r"""
 \begin{tabular}{lcr}
@@ -188,7 +168,7 @@ Column 1 & Column 2 & Column 3 \\
 """
     packages = detect_packages(booktabs_content)
     assert r"\usepackage{booktabs}" in packages
-    
+
     # Test tabularx detection
     tabularx_content = r"""
 \begin{tabularx}{\textwidth}{XXX}
@@ -200,7 +180,7 @@ Column 1 & Column 2 & Column 3 \\
     packages = detect_packages(tabularx_content)
     assert r"\usepackage{booktabs}" in packages
     assert r"\usepackage{tabularx}" in packages
-    
+
     # Test siunitx detection with \SI and \num
     siunitx_content = r"""
 \begin{tabular}{lcr}
@@ -267,15 +247,12 @@ Column 1 & Column 2 & Column 3 \\
 """
     tex_file = tmp_path / "test.tex"
     tex_file.write_text(tex_content)
-    
+
     # Output to non-existent subdirectory
     output_dir = tmp_path / "new_subdir"
     assert not output_dir.exists()
-    
-    result = runner.invoke(main, [
-        str(tex_file),
-        '-o', str(output_dir)
-    ])
+
+    result = runner.invoke(main, [str(tex_file), "-o", str(output_dir)])
     assert result.exit_code == 0
     assert output_dir.exists()
     assert (output_dir / "test_compiled.pdf").exists()
@@ -294,20 +271,41 @@ Column 1 & Column 2 & Column 3 \\
 """
     tex_file = tmp_path / "test.tex"
     tex_file.write_text(tex_content)
-    
+
     # Try to write to read-only directory (if possible to create)
     readonly_dir = tmp_path / "readonly"
     readonly_dir.mkdir()
     readonly_dir.chmod(0o444)  # Read-only
-    
+
     try:
-        result = runner.invoke(main, [
-            str(tex_file),
-            '-o', str(readonly_dir)
-        ])
+        result = runner.invoke(main, [str(tex_file), "-o", str(readonly_dir)])
         # Should handle permission error gracefully
         if result.exit_code != 0:
             assert "permission" in result.output.lower() or "denied" in result.output.lower()
     finally:
         # Restore permissions for cleanup
         readonly_dir.chmod(0o755)
+
+
+def test_compilation_succeeds_with_warnings(runner, tmp_path, test_logger):
+    """Test that compilation succeeds despite warnings (e.g., deprecated siunitx options)."""
+    # Table with deprecated siunitx options that trigger warnings but should still compile
+    tex_with_warnings = r"""\def\sym#1{\ifmmode^{#1}\else\(^{#1}\)\fi}
+\begin{tabular}{l*{3}{S[table-format = 1.3, table-space-text-post = {\sym{***}}, input-symbols = {()}]}}
+\toprule
+Variable & {Model 1} & {Model 2} & {Model 3} \\
+\midrule
+Coefficient & 1.234\sym{***} & 2.456\sym{**} & 3.789\sym{*} \\
+            & (0.123) & (0.234) & (0.345) \\
+\bottomrule
+\end{tabular}
+"""
+    tex_file = tmp_path / "warnings_test.tex"
+    tex_file.write_text(tex_with_warnings)
+
+    result = runner.invoke(main, [str(tex_file), "-o", str(tmp_path)])
+
+    test_logger.info(f"Compilation output: {result.output}")
+    assert result.exit_code == 0, "Compilation should succeed despite warnings"
+    assert "Output saved to" in result.output
+    assert (tmp_path / "warnings_test_compiled.pdf").exists()

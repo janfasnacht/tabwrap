@@ -3,16 +3,15 @@
 Integration tests for compiling longtable and threeparttable environments.
 """
 
-import pytest
 from pathlib import Path
-from tabwrap.core import TabWrap, CompilerMode
+
+import pytest
+
+from tabwrap.core import CompilerMode, TabWrap
 from tabwrap.latex import check_latex_dependencies
 
 # Skip tests if LaTeX is not installed
-pytestmark = pytest.mark.skipif(
-    not check_latex_dependencies()["pdflatex"],
-    reason="pdflatex not available"
-)
+pytestmark = pytest.mark.skipif(not check_latex_dependencies()["pdflatex"], reason="pdflatex not available")
 
 
 class TestLongtableCompilation:
