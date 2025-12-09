@@ -221,6 +221,11 @@ def validate_tex_content_syntax(content: str) -> list[str]:
     if brace_count != 0:
         issues.append(f"Unmatched braces: {abs(brace_count)} {'extra {' if brace_count > 0 else 'missing }'}")
 
+    # Check for table environment issues
+    if "begin{table}" in content:
+        if "end{table}" not in content:
+            issues.append("Missing \\end{table}")
+
     # Check for tabular environment issues
     if "begin{tabular}" in content:
         if "end{tabular}" not in content:

@@ -54,7 +54,7 @@ def is_valid_tabular_content(content: str) -> tuple[bool, str]:
     """
     Check if content appears to be a valid LaTeX table environment.
 
-    Supports: tabular, tabularx, longtable, threeparttable
+    Supports: tabular, tabularx, longtable, threeparttable, table
 
     Args:
         content: LaTeX content to validate
@@ -70,10 +70,27 @@ def is_valid_tabular_content(content: str) -> tuple[bool, str]:
     has_tabularx = "\\begin{tabularx}" in content
     has_longtable = "\\begin{longtable}" in content
     has_threeparttable = "\\begin{threeparttable}" in content
+    has_table = "\\begin{table}" in content
 
     # Must have at least one supported table environment
-    if not (has_tabular or has_tabularx or has_longtable or has_threeparttable):
-        return False, "No supported table environment found (tabular, tabularx, longtable, or threeparttable)"
+    # For table environment, it must contain an inner environment
+    if has_table:
+        if not (has_tabular or has_tabularx or has_longtable or has_threeparttable):
+            return (
+                False,
+                "table environment must contain a table environment (tabular, tabularx, longtable, or threeparttable)",
+            )
+    elif not (has_tabular or has_tabularx or has_longtable or has_threeparttable):
+        return False, "No supported table environment found (tabular, tabularx, longtable, threeparttable, or table)"
+
+    # CRITICAL: longtable cannot be inside table float
+    if has_table and has_longtable:
+        return False, "longtable cannot be used inside table environment (longtable is its own float)"
+
+    # Validate environment matching for table
+    if has_table:
+        if content.count("\\begin{table}") != content.count("\\end{table}"):
+            return False, "Mismatched table environment tags"
 
     # Validate environment matching for each type that's present
     if has_tabular:
@@ -95,9 +112,9 @@ def is_valid_tabular_content(content: str) -> tuple[bool, str]:
         if not (has_tabular or has_tabularx or has_longtable):
             return False, "threeparttable must contain a table environment (tabular, tabularx, or longtable)"
 
-    # Check for column specification (required for all table types except threeparttable wrapper)
-    # For threeparttable, the inner environment will have the column spec
-    if not has_threeparttable or (has_tabular or has_tabularx or has_longtable):
+    # Check for column specification (required for actual table environments)
+    # Skip this check if we only have table/threeparttable wrapper
+    if has_tabular or has_tabularx or has_longtable:
         if "{@" not in content and "{|" not in content and "{l" not in content and "{c" not in content and "{r" not in content:
             return False, "Missing or invalid column specification"
 

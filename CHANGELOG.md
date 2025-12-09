@@ -7,7 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2025-12-09
+
+### Added
+- Support for full `\begin{table}...\end{table}` environments - users can copy tables directly from LaTeX documents with captions, labels, and placement specifiers
+
+### Fixed
+- Compilation errors when users provided table environments
+
 ### Changed
+- Table environments skip automatic `\resizebox` and `\begin{center}` wrapping
 - Production logging now uses `TABWRAP_LOG_DIR` environment variable for systemd-managed log directories
 
 ## [1.2.0] - 2025-12-08

@@ -258,14 +258,17 @@ class TabWrap:
         user_packages = [f"\\usepackage{{{pkg}}}" for pkg in options.get("packages", "").split(",") if pkg]
         all_packages = "\n".join(user_packages) + "\n" + "\n".join(detected_packages)
 
-        # Check if content uses longtable (can't be centered)
+        # Check environment types
         has_longtable = "\\begin{longtable}" in content
+        has_table = "\\begin{table}" in content
 
         # Add option-specific packages
         if not options.get("no_rescale"):
             all_packages += "\n\\usepackage{graphicx}"
-            # Don't wrap longtable in resizebox
-            if not has_longtable:
+            # Don't wrap longtable or table environment in resizebox
+            # - longtable manages its own sizing across pages
+            # - table is a float and can't be wrapped in resizebox
+            if not has_longtable and not has_table:
                 content = r"\resizebox{\linewidth}{!}{" + content + "}"
 
         # Add underscore package if filename contains underscores and show_filename is enabled
@@ -285,9 +288,10 @@ class TabWrap:
             geometry_options.append("landscape")
         geometry_package = f"\\usepackage[{','.join(geometry_options)}]{{geometry}}"
 
-        # Wrap content in center environment only if not using longtable
-        # longtable is a float-like environment and can't be centered this way
-        if not has_longtable:
+        # Wrap content in center environment only if not using longtable or table
+        # - longtable is a float-like environment and handles its own positioning
+        # - table is a float and contains \centering directive (if user provided it)
+        if not has_longtable and not has_table:
             content = r"\begin{center}" + "\n" + content + "\n" + r"\end{center}"
 
         # Format final document (note: center wrapping removed from template)

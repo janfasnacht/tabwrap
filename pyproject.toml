@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tabwrap"
-version = "1.2.0"
+version = "1.3.0"
 description = "Wrap LaTeX table fragments into complete documents for research workflows"
 authors = ["Jan Fasnacht <jan.fasnacht@gmail.com>"]
 readme = "README.md"

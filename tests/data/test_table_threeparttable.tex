@@ -1,0 +1,26 @@
+\begin{table}[htbp]
+\centering
+\caption{Regression Results}
+\label{tab:regression}
+\begin{threeparttable}
+\begin{tabular}{lccc}
+\toprule
+Variable & Model 1 & Model 2 & Model 3 \\
+\midrule
+Treatment\tnote{a} & 0.234*** & 0.198** & 0.156* \\
+ & (0.045) & (0.052) & (0.061) \\
+Control\tnote{b} & -0.123* & -0.089 & -0.067 \\
+ & (0.038) & (0.041) & (0.044) \\
+\midrule
+Year FE & No & Yes & Yes \\
+Region FE & No & No & Yes \\
+Observations & 1250 & 1250 & 1250 \\
+R-squared & 0.234 & 0.312 & 0.389 \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\item[a] Significance levels: * p$<$0.05, ** p$<$0.01, *** p$<$0.001
+\item[b] Standard errors in parentheses
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
