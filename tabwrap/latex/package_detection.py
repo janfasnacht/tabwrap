@@ -73,6 +73,8 @@ PACKAGE_RULES = [
     # Graphics and color
     PackageRule("graphicx", patterns=["\\includegraphics"]),
     PackageRule("xcolor", patterns=["\\textcolor", "\\color"]),
+    # Caption formatting
+    PackageRule("caption", patterns=["\\caption*", "\\captionof"]),
     # Special characters and fonts
     PackageRule("url", patterns=["\\url"]),
 ]

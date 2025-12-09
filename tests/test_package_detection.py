@@ -218,6 +218,34 @@ Note here
         assert r"\usepackage{threeparttable}" in packages
 
 
+class TestCaptionPackage:
+    """Test caption package detection."""
+
+    def test_caption_star(self):
+        """Test detection of \\caption* (unnumbered caption)."""
+        content = r"""
+\begin{table}[h]
+\caption*{Unnumbered Caption}
+\begin{tabular}{lc}
+A & B \\
+\end{tabular}
+\end{table}
+"""
+        packages = detect_packages(content)
+        assert r"\usepackage{caption}" in packages
+
+    def test_captionof(self):
+        """Test detection of \\captionof command."""
+        content = r"""
+\captionof{table}{Caption outside float}
+\begin{tabular}{lc}
+A & B \\
+\end{tabular}
+"""
+        packages = detect_packages(content)
+        assert r"\usepackage{caption}" in packages
+
+
 class TestEdgeCases:
     """Test edge cases and potential false positives."""
 
