@@ -1,11 +1,14 @@
 # tabwrap/cli.py
 
+from importlib.metadata import version
+
 import click
 
 from .core import CompilerMode, TabWrap
 
 
 @click.command()
+@click.version_option(version("tabwrap"), prog_name="tabwrap")
 @click.argument("input_path", type=click.Path(exists=True, file_okay=True, dir_okay=True), default=".", required=False)
 @click.option("-o", "--output", type=click.Path(), default=".", help="Output directory (default: current directory)")
 @click.option("--suffix", default="_compiled", help="Output filename suffix (default: '_compiled')")
