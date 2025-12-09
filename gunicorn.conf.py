@@ -24,9 +24,16 @@ worker_class = "uvicorn.workers.UvicornWorker"
 timeout = 60  # seconds
 
 # Logging
-# Create logs directory if it doesn't exist
-log_dir = Path("logs")
-log_dir.mkdir(exist_ok=True)
+# In production (systemd), use /var/log/tabwrap (managed externally)
+# In development, create logs/ directory in current working directory
+log_dir_path = os.getenv("TABWRAP_LOG_DIR")
+if log_dir_path:
+    # Production: use explicit log directory (no mkdir needed, managed by systemd)
+    log_dir = Path(log_dir_path)
+else:
+    # Development: use relative logs/ directory
+    log_dir = Path("logs")
+    log_dir.mkdir(exist_ok=True)
 
 accesslog = str(log_dir / "access.log")
 errorlog = str(log_dir / "error.log")

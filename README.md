@@ -8,6 +8,8 @@
 
 A simple Python tool that transforms statistical programming output (LaTeX table fragments) into compiled PDFs, PNGs, or SVGs. Perfect for researchers who need to quickly inspect, share, and explore tables from Stata, R, Python, and other statistical tools.
 
+**Web Interface**: [tabwrap.janfasnacht.com](https://tabwrap.janfasnacht.com)
+
 ## What it does
 
 `tabwrap` takes incomplete LaTeX table fragments like this:

@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Production logging now uses `TABWRAP_LOG_DIR` environment variable for systemd-managed log directories
+
 ## [1.2.0] - 2025-12-08
 
 ### Added

@@ -21,12 +21,22 @@ try:
 except Exception:
     __version__ = "1.1.0"  # Fallback version
 
+# Setup logging
+# In production (gunicorn), use None for log_file (gunicorn handles file logging)
+# In development, use logs/ directory for application logs
+import os as _os
+
 from .config import setup_logging
 from .core import CompilerMode, TabWrap
 from .latex import FileValidationError, is_valid_tabular_content
 from .settings import Settings
 
-logger = setup_logging(module_name=__name__, log_file=Path("logs") / f"api_{datetime.now():%Y%m%d}.log")
+_log_file = None
+if not _os.getenv("TABWRAP_LOG_DIR"):  # Development mode (no systemd)
+    _log_dir = Path("logs")
+    _log_dir.mkdir(exist_ok=True)
+    _log_file = _log_dir / f"api_{datetime.now():%Y%m%d}.log"
+logger = setup_logging(module_name=__name__, log_file=_log_file)
 
 
 # Pydantic Models
