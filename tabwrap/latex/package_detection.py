@@ -56,6 +56,7 @@ PACKAGE_RULES = [
     ),
     PackageRule("multirow", patterns=["\\multirow"]),
     PackageRule("multicol", patterns=["\\multicolumn"]),
+    PackageRule("makecell", patterns=["\\makecell", "\\thead", "\\rothead"]),
     # Math and symbols - siunitx with both literal patterns and regex for S columns
     PackageRule(
         "siunitx",
@@ -70,6 +71,8 @@ PACKAGE_RULES = [
     PackageRule("amssymb", patterns=["\\checkmark"]),
     PackageRule("amsfonts", patterns=["\\mathbb"]),
     PackageRule("amsmath", patterns=["\\boldsymbol"]),
+    # bbm for proper blackboard bold numerals (indicator functions)
+    PackageRule("bbm", patterns=["\\mathbbm"]),
     # Graphics and color
     PackageRule("graphicx", patterns=["\\includegraphics"]),
     PackageRule("xcolor", patterns=["\\textcolor", "\\color"]),

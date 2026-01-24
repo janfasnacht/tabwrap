@@ -7,9 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-01-24
+
 ### Added
 - `--version` flag to display installed version
 - Auto-detection of `caption` package for `\caption*` (unnumbered captions) and `\captionof` commands
+- Auto-detection of `makecell` package for `\makecell`, `\thead`, and `\rothead` commands
+- Auto-detection of `bbm` package for `\mathbbm` command (blackboard bold numerals/indicator functions)
+
+### Fixed
+- `--suffix ""` now works correctly (previously filtered out all files because empty string matches everything)
+- Column specification parser now recognizes `p{width}`, `m{width}`, `b{width}` (paragraph columns) and `X` (tabularx)
+- Multi-line table rows are now parsed correctly (rows can span multiple lines before `\\`)
 
 ## [1.3.0] - 2025-12-09
 

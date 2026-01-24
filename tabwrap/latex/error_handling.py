@@ -232,11 +232,24 @@ def validate_tex_content_syntax(content: str) -> list[str]:
             issues.append("Missing \\end{tabular}")
 
         # Check for lines ending without \\
+        # Accumulate content across lines to handle multi-line rows
         lines = content.split("\n")
-        for i, line in enumerate(lines, 1):
-            line = line.strip()
-            if line and "&" in line and not line.endswith("\\\\") and not line.endswith("\\"):
-                if "toprule" not in line and "midrule" not in line and "bottomrule" not in line:
-                    issues.append(f"Line {i} contains & but doesn't end with \\\\")
+        accumulated = ""
+        for line in lines:
+            stripped = line.strip()
+            accumulated += " " + stripped
+
+            # If line ends with \\, we have a complete row - reset accumulator
+            if stripped.endswith("\\\\") or stripped.endswith("\\"):
+                accumulated = ""
+            # Skip lines inside environments or special commands
+            elif "begin{" in stripped or "end{" in stripped:
+                accumulated = ""
+            elif "toprule" in stripped or "midrule" in stripped or "bottomrule" in stripped:
+                accumulated = ""
+
+        # After processing all lines, check if there's unfinished row content with &
+        if accumulated.strip() and "&" in accumulated:
+            issues.append("Table row contains & but never ends with \\\\")
 
     return issues

@@ -81,3 +81,45 @@ def test_invalid_empty_table():
     is_valid, error = is_valid_tabular_content(content)
     assert not is_valid
     assert "must contain a table environment" in error
+
+
+def test_p_column_spec():
+    """Test validation accepts p{width} paragraph columns."""
+    content = r"\begin{tabular}{p{3cm}}Content\\\end{tabular}"
+    is_valid, error = is_valid_tabular_content(content)
+    assert is_valid, f"Should accept p{{}} column: {error}"
+
+
+def test_multiple_p_columns():
+    """Test validation accepts multiple p{width} columns."""
+    content = r"\begin{tabular}{p{3.5cm}p{5.5cm}p{6cm}}A & B & C\\\end{tabular}"
+    is_valid, error = is_valid_tabular_content(content)
+    assert is_valid, f"Should accept multiple p{{}} columns: {error}"
+
+
+def test_mixed_p_and_standard_columns():
+    """Test validation accepts mixed p{} and standard columns."""
+    content = r"\begin{tabular}{lp{4cm}cr}A & B & C & D\\\end{tabular}"
+    is_valid, error = is_valid_tabular_content(content)
+    assert is_valid, f"Should accept mixed columns: {error}"
+
+
+def test_m_column_spec():
+    """Test validation accepts m{width} middle-aligned paragraph columns."""
+    content = r"\begin{tabular}{m{3cm}}Content\\\end{tabular}"
+    is_valid, error = is_valid_tabular_content(content)
+    assert is_valid, f"Should accept m{{}} column: {error}"
+
+
+def test_b_column_spec():
+    """Test validation accepts b{width} bottom-aligned paragraph columns."""
+    content = r"\begin{tabular}{b{3cm}}Content\\\end{tabular}"
+    is_valid, error = is_valid_tabular_content(content)
+    assert is_valid, f"Should accept b{{}} column: {error}"
+
+
+def test_tabularx_X_column():
+    """Test validation accepts X columns in tabularx."""
+    content = r"\begin{tabularx}{\textwidth}{lXr}A & B & C\\\end{tabularx}"
+    is_valid, error = is_valid_tabular_content(content)
+    assert is_valid, f"Should accept X column: {error}"

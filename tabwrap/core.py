@@ -83,8 +83,12 @@ class TabWrap:
             if input_path.is_dir():
                 pattern = "**/*.tex" if recursive else "*.tex"
                 all_tex_files = list(input_path.glob(pattern))
-                # Filter out already compiled files (those with _compiled suffix)
-                tex_files = [f for f in all_tex_files if not f.stem.endswith(suffix)]
+                # Filter out already compiled files (those with the suffix)
+                # Only filter if suffix is non-empty (empty string matches everything)
+                if suffix:
+                    tex_files = [f for f in all_tex_files if not f.stem.endswith(suffix)]
+                else:
+                    tex_files = all_tex_files
                 if not tex_files:
                     search_type = "recursively" if recursive else ""
                     raise FileValidationError(f"No .tex files found {search_type} in {input_path}")

@@ -6,6 +6,7 @@ from click.testing import CliRunner
 
 from tabwrap.cli import main
 from tabwrap.core import CompilerMode, TabWrap
+from tabwrap.latex.error_handling import validate_tex_content_syntax
 
 
 @pytest.fixture
@@ -309,3 +310,45 @@ Coefficient & 1.234\sym{***} & 2.456\sym{**} & 3.789\sym{*} \\
     assert result.exit_code == 0, "Compilation should succeed despite warnings"
     assert "Output saved to" in result.output
     assert (tmp_path / "warnings_test_compiled.pdf").exists()
+
+
+def test_multiline_row_syntax_validation():
+    """Test that multi-line table rows are accepted."""
+    content = r"""
+\begin{tabular}{lll}
+\toprule
+Category &
+Definition &
+Examples \\
+\bottomrule
+\end{tabular}
+"""
+    issues = validate_tex_content_syntax(content)
+    row_issues = [i for i in issues if "contains &" in i]
+    assert not row_issues, f"Should accept multi-line rows: {row_issues}"
+
+
+def test_multiline_row_three_lines():
+    """Test that rows spanning three lines are accepted."""
+    content = r"""
+\begin{tabular}{lll}
+First &
+Second &
+Third \\
+\end{tabular}
+"""
+    issues = validate_tex_content_syntax(content)
+    row_issues = [i for i in issues if "contains &" in i]
+    assert not row_issues, f"Should accept 3-line row: {row_issues}"
+
+
+def test_single_line_row_syntax():
+    """Test that single-line rows still work."""
+    content = r"""
+\begin{tabular}{lll}
+A & B & C \\
+\end{tabular}
+"""
+    issues = validate_tex_content_syntax(content)
+    row_issues = [i for i in issues if "contains &" in i]
+    assert not row_issues, f"Single-line rows should work: {row_issues}"

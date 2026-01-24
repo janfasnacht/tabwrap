@@ -115,7 +115,17 @@ def is_valid_tabular_content(content: str) -> tuple[bool, str]:
     # Check for column specification (required for actual table environments)
     # Skip this check if we only have table/threeparttable wrapper
     if has_tabular or has_tabularx or has_longtable:
-        if "{@" not in content and "{|" not in content and "{l" not in content and "{c" not in content and "{r" not in content:
+        if (
+            "{@" not in content
+            and "{|" not in content
+            and "{l" not in content
+            and "{c" not in content
+            and "{r" not in content
+            and "{p" not in content
+            and "{m" not in content
+            and "{b" not in content
+            and "{X" not in content
+        ):
             return False, "Missing or invalid column specification"
 
     return True, ""
