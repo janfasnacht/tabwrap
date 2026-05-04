@@ -7,47 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-05-04
+
+### Added
+- Multi-format output: request `pdf`, `png`, and `svg` in one call (`-f pdf -f png` CLI; `formats=pdf,png` API). Multi-format responses are a ZIP bundle, optionally with a `manifest.json` (`--manifest` / `manifest=true`) carrying page counts, detected packages, LaTeX warnings, and timings.
+- Public types: `CompileResult`, `Format`, and a `TabwrapError` exception hierarchy (`InvalidLatexError`, `LatexCompilationError`, `ConversionError`, `DependencyError`).
+
+### Changed
+- **Breaking (Python API):** `compile_tex()` now returns a `CompileResult` (was `Path`); compilation errors raise `TabwrapError` subclasses (was `RuntimeError`). CLI and HTTP responses for single-format requests are unchanged.
+
+### Removed
+- Stale single-VPS deploy script (`scripts/deploy.sh`) and its README.
+
 ## [1.3.1] - 2026-01-24
 
 ### Added
-- `--version` flag to display installed version
-- Auto-detection of `caption` package for `\caption*` (unnumbered captions) and `\captionof` commands
-- Auto-detection of `makecell` package for `\makecell`, `\thead`, and `\rothead` commands
-- Auto-detection of `bbm` package for `\mathbbm` command (blackboard bold numerals/indicator functions)
+- `--version` flag.
+- Auto-detection of `caption`, `makecell`, and `bbm` packages.
 
 ### Fixed
-- `--suffix ""` now works correctly (previously filtered out all files because empty string matches everything)
-- Column specification parser now recognizes `p{width}`, `m{width}`, `b{width}` (paragraph columns) and `X` (tabularx)
-- Multi-line table rows are now parsed correctly (rows can span multiple lines before `\\`)
+- `--suffix ""` no longer filters out all files.
+- Column-spec parser handles `p{}`, `m{}`, `b{}`, and tabularx `X`.
+- Multi-line table rows parse correctly.
 
 ## [1.3.0] - 2025-12-09
 
 ### Added
-- Support for full `\begin{table}...\end{table}` environments - users can copy tables directly from LaTeX documents with captions, labels, and placement specifiers
-
-### Fixed
-- Compilation errors when users provided table environments
+- Support for full `\begin{table}...\end{table}` environments.
 
 ### Changed
-- Table environments skip automatic `\resizebox` and `\begin{center}` wrapping
-- Production logging now uses `TABWRAP_LOG_DIR` environment variable for systemd-managed log directories
+- Table environments skip automatic `\resizebox` and `\begin{center}` wrapping.
+- Production logging honours `TABWRAP_LOG_DIR`.
 
 ## [1.2.0] - 2025-12-08
 
 ### Added
-- API rate limiting via SlowAPI (configurable per-IP limits, default: 10/min, 100/hour)
-- Environment configuration via `TABWRAP_*` variables (CORS, rate limits, log level)
-- Gunicorn production server configuration
-- Smoke test script for post-deployment validation
-- Locust load testing infrastructure
+- API rate limiting (SlowAPI) and `TABWRAP_*` environment configuration.
+- Gunicorn production config; smoke-test script; Locust load tests.
 
 ### Changed
-- API error responses: HTTP 400 for user errors (invalid LaTeX, missing packages), HTTP 500 for system errors
-- API version determined dynamically from package metadata
-- LaTeX compilation now parses log files even when pdflatex returns exit code 0
-
-### Fixed
-- Compilation edge cases where pdflatex appeared successful but log contained errors
+- API error responses split into 400 (user) vs 500 (system).
+- API version sourced from package metadata.
+- LaTeX log parsed even when pdflatex exits 0 (catches silent errors).
 
 ## [1.1.0] - 2025-10-18
 
