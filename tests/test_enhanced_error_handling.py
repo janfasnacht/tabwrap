@@ -7,6 +7,7 @@ from unittest.mock import patch
 import pytest
 from click.testing import CliRunner
 
+from tabwrap import CompileResult, DependencyError, Format
 from tabwrap.cli import main
 from tabwrap.core import TabWrap
 from tabwrap.latex import (
@@ -55,15 +56,18 @@ def test_dependency_report_formatting():
     assert "Install a LaTeX distribution" in report
 
 
+def _ok_result(pdf_path: Path) -> CompileResult:
+    return CompileResult(artifacts={Format.PDF: pdf_path}, page_counts={Format.PDF: 1})
+
+
 def test_compiler_dependency_check():
     """Test compiler dependency checking."""
     compiler = TabWrap()
 
-    # Mock missing pdflatex
     with patch("tabwrap.core.check_latex_dependencies") as mock_check:
         mock_check.return_value = {"pdflatex": False, "convert": True}
 
-        with pytest.raises(RuntimeError) as excinfo:
+        with pytest.raises(DependencyError) as excinfo:
             compiler.check_dependencies()
 
         assert "pdflatex is required but not found" in str(excinfo.value)
@@ -74,23 +78,20 @@ def test_compiler_dependency_check_png():
     """Test compiler dependency checking for PNG output."""
     compiler = TabWrap()
 
-    # Mock missing convert for PNG
     with patch("tabwrap.core.check_latex_dependencies") as mock_check:
         mock_check.return_value = {"pdflatex": True, "convert": False}
 
-        # Should pass without PNG requirement
         compiler.check_dependencies(require_convert=False)
 
-        # Should fail with PNG requirement
-        with pytest.raises(RuntimeError) as excinfo:
+        with pytest.raises(DependencyError) as excinfo:
             compiler.check_dependencies(require_convert=True)
 
         assert "ImageMagick 'convert' is required for PNG output" in str(excinfo.value)
 
 
 def test_compilation_result():
-    """Test CompilationResult dataclass."""
-    success_result = CompilationResult(file=Path("test.tex"), success=True, output_path=Path("test.pdf"))
+    """Test CompilationResult batch wrapper carries CompileResult."""
+    success_result = CompilationResult(file=Path("test.tex"), success=True, result=_ok_result(Path("test.pdf")))
 
     assert success_result.success
     assert success_result.output_path == Path("test.pdf")
@@ -106,8 +107,8 @@ def test_compilation_result():
 def test_batch_compilation_result():
     """Test BatchCompilationResult aggregation."""
     successes = [
-        CompilationResult(Path("good1.tex"), True, Path("good1.pdf")),
-        CompilationResult(Path("good2.tex"), True, Path("good2.pdf")),
+        CompilationResult(Path("good1.tex"), True, _ok_result(Path("good1.pdf"))),
+        CompilationResult(Path("good2.tex"), True, _ok_result(Path("good2.pdf"))),
     ]
 
     failures = [
@@ -137,7 +138,7 @@ def test_batch_compilation_result():
 def test_batch_result_formatting():
     """Test batch result formatting."""
     # All successful
-    successes = [CompilationResult(Path("good.tex"), True, Path("good.pdf"))]
+    successes = [CompilationResult(Path("good.tex"), True, _ok_result(Path("good.pdf")))]
     all_success = BatchCompilationResult(successes=successes, failures=[])
     report = LaTeXErrorParser.format_batch_result(all_success)
     assert "✅ All 1 files compiled successfully!" in report

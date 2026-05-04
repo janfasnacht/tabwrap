@@ -40,6 +40,31 @@ def test_png_output(runner, sample_tex, tmp_path):
     assert (tmp_path / "test_table_compiled.png").exists()
 
 
+def test_multi_format_bundle(runner, sample_tex, tmp_path):
+    import zipfile
+
+    result = runner.invoke(main, [str(sample_tex), "-o", str(tmp_path), "-f", "pdf", "-f", "png"])
+    assert result.exit_code == 0, result.output
+    zip_path = tmp_path / "test_table_compiled.zip"
+    assert zip_path.exists()
+    with zipfile.ZipFile(zip_path) as zf:
+        names = set(zf.namelist())
+    assert {"test_table_compiled.pdf", "test_table_compiled.png"} == names
+
+
+def test_multi_format_with_manifest(runner, sample_tex, tmp_path):
+    import json
+    import zipfile
+
+    result = runner.invoke(main, [str(sample_tex), "-o", str(tmp_path), "-f", "pdf", "-f", "png", "--manifest"])
+    assert result.exit_code == 0, result.output
+    zip_path = tmp_path / "test_table_compiled.zip"
+    with zipfile.ZipFile(zip_path) as zf:
+        manifest = json.loads(zf.read("manifest.json"))
+    assert "pdflatex" in manifest["timings"]
+    assert set(manifest["page_counts"].keys()) == {"pdf", "png"}
+
+
 def test_landscape_mode(runner, sample_tex, tmp_path, test_logger):
     result = runner.invoke(main, [str(sample_tex), "-o", str(tmp_path), "--landscape"])
     if result.exit_code != 0:

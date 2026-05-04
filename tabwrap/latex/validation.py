@@ -2,8 +2,10 @@
 import os
 from pathlib import Path
 
+from ..exceptions import InvalidLatexError
 
-class FileValidationError(Exception):
+
+class FileValidationError(InvalidLatexError):
     """Custom exception for file validation errors."""
 
     pass

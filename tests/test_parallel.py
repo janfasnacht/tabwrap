@@ -47,7 +47,7 @@ def test_parallel_vs_sequential(test_dataset):
 
     # Test sequential processing
     with TabWrap(mode=CompilerMode.CLI) as compiler:
-        sequential_result = compiler.compile_tex(input_path=temp_dir, output_dir=output_dir, parallel=False)
+        sequential_result = compiler.compile_tex(input_path=temp_dir, output_dir=output_dir, parallel=False).path
 
     # Count sequential outputs
     sequential_outputs = list(output_dir.glob("*.pdf"))
@@ -58,7 +58,7 @@ def test_parallel_vs_sequential(test_dataset):
 
     # Test parallel processing
     with TabWrap(mode=CompilerMode.CLI) as compiler:
-        parallel_result = compiler.compile_tex(input_path=temp_dir, output_dir=output_dir, parallel=True)
+        parallel_result = compiler.compile_tex(input_path=temp_dir, output_dir=output_dir, parallel=True).path
 
     # Count parallel outputs
     parallel_outputs = list(output_dir.glob("*.pdf"))
@@ -83,7 +83,7 @@ def test_parallel_with_single_file(sample_tex_content):
 
         # Test parallel processing with single file
         with TabWrap(mode=CompilerMode.CLI) as compiler:
-            result = compiler.compile_tex(input_path=test_file, output_dir=output_dir, parallel=True)
+            result = compiler.compile_tex(input_path=test_file, output_dir=output_dir, parallel=True).path
 
         assert result.exists()
         assert result.name == "single_test_compiled.pdf"
@@ -101,7 +101,7 @@ def test_parallel_with_max_workers(test_dataset):
             output_dir=output_dir,
             parallel=True,
             max_workers=2,  # Limit to 2 workers
-        )
+        ).path
 
     outputs = list(output_dir.glob("*.pdf"))
     assert len(outputs) == 5  # Should still compile all files
@@ -125,7 +125,7 @@ def test_parallel_error_recovery(sample_tex_content):
         # Test parallel processing with mixed files
         with TabWrap(mode=CompilerMode.CLI) as compiler:
             try:
-                result = compiler.compile_tex(input_path=temp_dir, output_dir=output_dir, parallel=True)
+                result = compiler.compile_tex(input_path=temp_dir, output_dir=output_dir, parallel=True).path
                 # Should succeed and return path to good file
                 assert result.exists()
             except RuntimeError as e:
@@ -144,7 +144,7 @@ def test_parallel_png_output(test_dataset):
     output_dir.mkdir()
 
     with TabWrap(mode=CompilerMode.CLI) as compiler:
-        result = compiler.compile_tex(input_path=temp_dir, output_dir=output_dir, parallel=True, png=True)
+        result = compiler.compile_tex(input_path=temp_dir, output_dir=output_dir, parallel=True, png=True).path
 
     # Should produce PNG files
     png_outputs = list(output_dir.glob("*.png"))
@@ -173,6 +173,6 @@ A & B \\
                 input_path=test_file,
                 output_dir=output_dir,
                 # parallel=False is the default
-            )
+            ).path
 
         assert result.exists()

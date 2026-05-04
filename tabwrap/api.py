@@ -21,14 +21,19 @@ try:
 except Exception:
     __version__ = "1.1.0"  # Fallback version
 
-# Setup logging
-# In production (gunicorn), use None for log_file (gunicorn handles file logging)
-# In development, use logs/ directory for application logs
 import os as _os
 
 from .config import setup_logging
 from .core import CompilerMode, TabWrap
-from .latex import FileValidationError, is_valid_tabular_content
+from .exceptions import (
+    ConversionError,
+    DependencyError,
+    InvalidLatexError,
+    LatexCompilationError,
+)
+from .latex import is_valid_tabular_content
+from .output import bundle_artifacts
+from .result import resolve_formats
 from .settings import Settings
 
 _log_file = None
@@ -50,8 +55,10 @@ class CompileOptions(BaseModel):
     landscape: bool = Field(False, description="Use landscape orientation")
     no_rescale: bool = Field(False, description="Disable automatic table resizing")
     show_filename: bool = Field(False, description="Show filename as header")
-    png: bool = Field(False, description="Output PNG instead of PDF")
-    svg: bool = Field(False, description="Output SVG instead of PDF")
+    formats: str = Field("", description="Comma-separated formats: pdf,png,svg. Defaults to pdf.")
+    png: bool = Field(False, description="Alias: include png in formats")
+    svg: bool = Field(False, description="Alias: include svg in formats")
+    manifest: bool = Field(False, description="Include manifest.json in multi-format zip bundle")
     parallel: bool = Field(False, description="Use parallel processing for faster compilation")
     max_workers: int = Field(None, description="Maximum number of parallel workers")
 
@@ -62,10 +69,8 @@ class ErrorResponse(BaseModel):
 
 def create_app():
     """Create FastAPI application."""
-    # Load settings from environment
     settings = Settings()
 
-    # Initialize rate limiter
     limiter = Limiter(key_func=get_remote_address, default_limits=[settings.rate_limit_per_hour])
 
     app = FastAPI(
@@ -76,11 +81,9 @@ def create_app():
         redoc_url="/api/redoc",
     )
 
-    # Register rate limiter
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-    # Add CORS middleware
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -88,32 +91,6 @@ def create_app():
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
-    def classify_compilation_error(error_msg: str) -> tuple[int, str]:
-        """
-        Classify compilation errors as user errors (400) or system errors (500).
-
-        User errors are typically caused by invalid LaTeX syntax, missing packages,
-        or malformed table content. System errors are unexpected failures in the
-        compilation pipeline.
-        """
-        user_error_patterns = [
-            "Invalid tabular",
-            "No tabular environment",
-            "Missing package",
-            "undefined control sequence",
-            "package not found",
-            "! LaTeX Error",
-            "! Missing",
-            "Invalid LaTeX content",
-        ]
-
-        error_lower = error_msg.lower()
-        for pattern in user_error_patterns:
-            if pattern.lower() in error_lower:
-                return 400, f"LaTeX compilation error: {error_msg}"
-
-        return 500, f"System error: {error_msg}"
 
     @app.get("/api/health", response_model=HealthResponse, tags=["Health"])
     async def health_check():
@@ -125,7 +102,15 @@ def create_app():
         response_class=FileResponse,
         tags=["Compilation"],
         responses={
-            200: {"description": "Compiled file", "content": {"application/pdf": {}, "image/png": {}, "image/svg+xml": {}}},
+            200: {
+                "description": "Compiled file (binary) or zip bundle when multiple formats are requested",
+                "content": {
+                    "application/pdf": {},
+                    "image/png": {},
+                    "image/svg+xml": {},
+                    "application/zip": {},
+                },
+            },
             400: {"model": ErrorResponse, "description": "Bad Request - Invalid input"},
             429: {"model": ErrorResponse, "description": "Too Many Requests - Rate limit exceeded"},
             500: {"model": ErrorResponse, "description": "Internal Server Error - Compilation failed"},
@@ -139,99 +124,91 @@ def create_app():
         landscape: bool = Form(False, description="Use landscape orientation"),
         no_rescale: bool = Form(False, description="Disable automatic table resizing"),
         show_filename: bool = Form(False, description="Show filename as header"),
-        png: bool = Form(False, description="Output PNG instead of PDF"),
-        svg: bool = Form(False, description="Output SVG instead of PDF"),
+        formats: str = Form("", description="Comma-separated formats: pdf,png,svg. Defaults to pdf."),
+        png: bool = Form(False, description="Alias: include png in formats"),
+        svg: bool = Form(False, description="Alias: include svg in formats"),
+        manifest: bool = Form(False, description="Include manifest.json in multi-format zip bundle"),
         parallel: bool = Form(False, description="Use parallel processing for faster compilation"),
         max_workers: int = Form(None, description="Maximum number of parallel workers (default: CPU cores)"),
     ):
-        """
-        Compile LaTeX table fragment to PDF, PNG, or SVG.
+        """Compile a LaTeX table fragment into one or more output formats.
 
-        Upload a .tex file containing a LaTeX table fragment (like \\begin{tabular}...\\end{tabular})
-        and get back a compiled PDF, PNG, or SVG file.
-
-        The system automatically detects required LaTeX packages and handles compilation.
+        Single-format requests return the raw artifact with the matching media type.
+        Multi-format requests return a zip bundle (`application/zip`); pass
+        `manifest=true` to also include a `manifest.json` with page counts,
+        detected packages, warnings, and timings.
         """
         try:
-            # Validate file type
             if not file.filename or not file.filename.endswith(".tex"):
                 raise HTTPException(status_code=400, detail="Invalid file. Only .tex files are allowed.")
 
-            # Validate mutually exclusive options
-            if png and svg:
-                raise HTTPException(status_code=400, detail="Cannot specify both PNG and SVG output formats.")
+            try:
+                resolved_formats = resolve_formats(formats, png=png, svg=svg, strict_alias_combo=True)
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
 
-            # Read file content
             content = await file.read()
             try:
                 content_str = content.decode("utf-8")
             except UnicodeDecodeError:
                 raise HTTPException(status_code=400, detail="File must be valid UTF-8 encoded text.")
 
-            # Validate LaTeX content
-            if not is_valid_tabular_content(content_str):
-                raise HTTPException(status_code=400, detail="Invalid LaTeX content. Must contain tabular environment.")
+            is_valid, reason = is_valid_tabular_content(content_str)
+            if not is_valid:
+                raise HTTPException(status_code=400, detail=f"Invalid LaTeX content: {reason}")
 
-            # Create temporary directory
             temp_dir = Path(tempfile.mkdtemp())
 
             try:
-                # Save uploaded file
                 input_path = temp_dir / file.filename
                 with open(input_path, "w", encoding="utf-8") as f:
                     f.write(content_str)
 
-                # Compile with TabWrap
                 with TabWrap(mode=CompilerMode.WEB) as compiler:
                     try:
-                        output_path = compiler.compile_tex(
+                        result = compiler.compile_tex(
                             input_path=input_path,
                             output_dir=temp_dir,
                             packages=packages,
                             landscape=landscape,
                             no_rescale=no_rescale,
                             show_filename=show_filename,
-                            png=png,
-                            svg=svg,
+                            formats=resolved_formats,
                             keep_tex=False,
                             parallel=parallel,
                             max_workers=max_workers,
                         )
-                    except FileValidationError as e:
-                        raise HTTPException(status_code=400, detail=f"Invalid file content: {str(e)}")
-                    except RuntimeError as e:
-                        # Classify error as user (400) or system (500) error
-                        error_msg = str(e)
-                        status_code, detail = classify_compilation_error(error_msg)
-                        raise HTTPException(status_code=status_code, detail=detail)
+                    except InvalidLatexError as e:
+                        raise HTTPException(status_code=400, detail=f"Invalid file content: {e}")
+                    except LatexCompilationError as e:
+                        raise HTTPException(status_code=400, detail=f"LaTeX compilation error: {e}")
+                    except DependencyError as e:
+                        raise HTTPException(status_code=500, detail=f"Missing dependency: {e}")
+                    except ConversionError as e:
+                        raise HTTPException(status_code=500, detail=f"Conversion error: {e}")
 
-                # Determine content type and filename
                 stem = Path(file.filename).stem
-                if svg:
-                    media_type = "image/svg+xml"
-                    filename = f"{stem}_compiled.svg"
-                elif png:
-                    media_type = "image/png"
-                    filename = f"{stem}_compiled.png"
-                else:
-                    media_type = "application/pdf"
-                    filename = f"{stem}_compiled.pdf"
 
-                # Return file
-                return FileResponse(path=str(output_path), media_type=media_type, filename=filename)
+                if len(result.artifacts) == 1:
+                    only_fmt, only_path = next(iter(result.artifacts.items()))
+                    filename = f"{stem}_compiled{only_fmt.extension}"
+                    return FileResponse(path=str(only_path), media_type=only_fmt.media_type, filename=filename)
+
+                manifest_payload = result.to_manifest() if manifest else None
+                zip_path = bundle_artifacts(result.artifacts, temp_dir, stem, manifest=manifest_payload)
+                return FileResponse(
+                    path=str(zip_path),
+                    media_type="application/zip",
+                    filename=f"{stem}_compiled.zip",
+                )
 
             except HTTPException:
-                # Re-raise HTTP exceptions as-is
                 raise
             except Exception as e:
                 logger.error(f"Unexpected error during compilation: {e}")
                 raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
-            finally:
-                # Cleanup is handled by TabWrap context manager
-                pass
 
         except HTTPException:
-            # Re-raise HTTP exceptions as-is
             raise
         except Exception as e:
             logger.error(f"API error: {e}")

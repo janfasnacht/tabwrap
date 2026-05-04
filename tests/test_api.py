@@ -101,7 +101,7 @@ def test_svg_output(client, sample_tex, tmp_path):
 
 
 def test_png_and_svg_mutually_exclusive(client, sample_tex, tmp_path):
-    """Test that PNG and SVG options are mutually exclusive."""
+    """Legacy alias guard: png+svg without explicit formats still rejects."""
     tex_file = tmp_path / "test_table.tex"
     tex_file.write_text(sample_tex)
 
@@ -113,6 +113,22 @@ def test_png_and_svg_mutually_exclusive(client, sample_tex, tmp_path):
     assert response.status_code == 400
     data = response.json()
     assert "Cannot specify both PNG and SVG" in data["detail"]
+
+
+def test_explicit_formats_override_aliases(client, sample_tex, tmp_path):
+    """When `formats` is provided, png+svg booleans are ignored (no rejection)."""
+    tex_file = tmp_path / "test_table.tex"
+    tex_file.write_text(sample_tex)
+
+    with open(tex_file, "rb") as f:
+        response = client.post(
+            "/api/compile",
+            files={"file": ("test_table.tex", f, "text/plain")},
+            data={"formats": "pdf", "png": True, "svg": True},
+        )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/pdf"
 
 
 def test_invalid_file_type(client, tmp_path):

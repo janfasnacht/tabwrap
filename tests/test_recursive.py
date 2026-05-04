@@ -28,7 +28,7 @@ Test & Value & Result \\
 
     # Compile with recursive
     compiler = TabWrap(mode=CompilerMode.CLI)
-    output_path = compiler.compile_tex(input_path=tmp_path, output_dir=tmp_path, recursive=True)
+    output_path = compiler.compile_tex(input_path=tmp_path, output_dir=tmp_path, recursive=True).path
 
     # Should find and compile all 3 files
     assert output_path.exists()
@@ -63,7 +63,7 @@ Test & Value & Result \\
 
     # Compile without recursive
     compiler = TabWrap(mode=CompilerMode.CLI)
-    output_path = compiler.compile_tex(input_path=tmp_path, output_dir=tmp_path, recursive=False)
+    output_path = compiler.compile_tex(input_path=tmp_path, output_dir=tmp_path, recursive=False).path
 
     # Should only process root level file
     assert output_path.exists()

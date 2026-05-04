@@ -1,10 +1,14 @@
 # tabwrap/cli.py
 
 from importlib.metadata import version
+from pathlib import Path
 
 import click
 
 from .core import CompilerMode, TabWrap
+from .exceptions import TabwrapError
+from .output import bundle_artifacts
+from .result import Format, resolve_formats
 
 
 @click.command()
@@ -17,8 +21,17 @@ from .core import CompilerMode, TabWrap
 @click.option("--no-resize", is_flag=True, help="Disable automatic table resizing")
 @click.option("--header", is_flag=True, help="Show filename as header in output")
 @click.option("--keep-tex", is_flag=True, help="Keep generated LaTeX files and compilation logs for debugging")
-@click.option("-p", "--png", is_flag=True, help="Output PNG instead of PDF")
-@click.option("--svg", is_flag=True, help="Output SVG instead of PDF")
+@click.option(
+    "-f",
+    "--format",
+    "formats",
+    multiple=True,
+    type=click.Choice(["pdf", "png", "svg"]),
+    help="Output format (repeat for multiple). Defaults to pdf. Multiple formats produce a zip bundle.",
+)
+@click.option("-p", "--png", is_flag=True, help="Alias for --format png")
+@click.option("--svg", is_flag=True, help="Alias for --format svg")
+@click.option("--manifest", is_flag=True, help="Include manifest.json with metadata in multi-format bundle")
 @click.option("-c", "--combine", is_flag=True, help="Combine multiple PDFs with table of contents")
 @click.option("-r", "--recursive", is_flag=True, help="Process subdirectories recursively")
 @click.option("--completion", type=click.Choice(["bash", "zsh", "fish"]), help="Generate shell completion script")
@@ -33,8 +46,10 @@ def main(
     no_resize: bool,
     header: bool,
     keep_tex: bool,
+    formats: tuple[str, ...],
     png: bool,
     svg: bool,
+    manifest: bool,
     combine: bool,
     recursive: bool,
     completion: str,
@@ -46,7 +61,6 @@ def main(
     INPUT_PATH: .tex file or directory to process (default: current directory)
     """
 
-    # Handle completion generation
     if completion:
         prog_name = "tabwrap"
         if completion == "bash":
@@ -57,17 +71,26 @@ def main(
             click.echo(f"eval (env _TABWRAP_COMPLETE=fish_source {prog_name})")
         return
 
-    # Validate argument combinations
-    if png and svg:
-        click.echo("Error: Cannot specify both --png and --svg", err=True)
+    if formats and (png or svg):
+        click.echo("Warning: --png/--svg ignored because --format was provided", err=True)
+
+    try:
+        resolved = resolve_formats(list(formats) or None, png=png, svg=svg, strict_alias_combo=True)
+    except ValueError as e:
+        # Preserve the historical "Cannot specify both --png and --svg" wording
+        # so existing scripts grep cleanly.
+        if "PNG and SVG" in str(e):
+            click.echo("Error: Cannot specify both --png and --svg", err=True)
+        else:
+            click.echo(f"Error: {e}", err=True)
         raise click.Abort()
 
-    if combine and (png or svg):
-        click.echo("Warning: --combine ignored when using --png or --svg output", err=True)
+    if combine and resolved != {Format.PDF}:
+        click.echo("Warning: --combine ignored when output formats include non-PDF", err=True)
 
     try:
         with TabWrap(mode=CompilerMode.CLI) as compiler:
-            output_path = compiler.compile_tex(
+            result = compiler.compile_tex(
                 input_path=input_path,
                 output_dir=output,
                 suffix=suffix,
@@ -76,17 +99,38 @@ def main(
                 no_rescale=no_resize,
                 show_filename=header,
                 keep_tex=keep_tex,
-                png=png,
-                svg=svg,
+                formats=resolved,
                 combine_pdf=combine,
                 recursive=recursive,
                 parallel=parallel,
                 max_workers=max_workers,
             )
-            click.echo(f"Output saved to {output_path}")
+
+            if len(result.artifacts) > 1:
+                stem = _bundle_stem(input_path)
+                manifest_payload = result.to_manifest() if manifest else None
+                zip_path = bundle_artifacts(
+                    result.artifacts,
+                    Path(output),
+                    stem,
+                    suffix=suffix,
+                    manifest=manifest_payload,
+                )
+                click.echo(f"Bundle saved to {zip_path}")
+            else:
+                only_path = next(iter(result.artifacts.values()))
+                click.echo(f"Output saved to {only_path}")
+    except TabwrapError as e:
+        click.echo(f"Error: {e}", err=True)
+        raise click.Abort()
     except Exception as e:
         click.echo(f"Error: {str(e)}", err=True)
         raise click.Abort()
+
+
+def _bundle_stem(input_path: str) -> str:
+    p = Path(input_path)
+    return p.stem if p.is_file() else p.name or "tabwrap"
 
 
 if __name__ == "__main__":

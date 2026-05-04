@@ -33,7 +33,7 @@ Third & 7.89 & Active \\
         """)
 
         compiler = TabWrap(mode=CompilerMode.CLI)
-        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out")
+        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out").path
 
         assert output.exists()
         assert output.suffix == ".pdf"
@@ -66,7 +66,7 @@ Row 3 & Data C & 300 \\
         """)
 
         compiler = TabWrap(mode=CompilerMode.CLI)
-        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out")
+        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out").path
 
         assert output.exists()
         assert output.suffix == ".pdf"
@@ -90,7 +90,7 @@ Col A & Col B & Col C \\
         """)
 
         compiler = TabWrap(mode=CompilerMode.CLI)
-        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out", png=True)
+        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out", png=True).path
 
         assert output.exists()
         assert output.suffix == ".png"
@@ -122,7 +122,7 @@ Control & -0.123 & (0.034) \\
         """)
 
         compiler = TabWrap(mode=CompilerMode.CLI)
-        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out")
+        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out").path
 
         assert output.exists()
         assert output.suffix == ".pdf"
@@ -151,7 +151,7 @@ Education & 16.2 & 2.5 \\
         """)
 
         compiler = TabWrap(mode=CompilerMode.CLI)
-        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out")
+        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out").path
 
         assert output.exists()
         assert output.suffix == ".pdf"
@@ -172,7 +172,7 @@ A & B & C \\
         """)
 
         compiler = TabWrap(mode=CompilerMode.CLI)
-        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out", no_rescale=True)
+        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out", no_rescale=True).path
 
         assert output.exists()
         assert output.suffix == ".pdf"
@@ -196,7 +196,7 @@ class TestMixedEnvironments:
         for test_file_name in test_files:
             test_file = test_data_dir / test_file_name
             if test_file.exists():
-                output = compiler.compile_tex(test_file, tmp_path, suffix="_compiled")
+                output = compiler.compile_tex(test_file, tmp_path, suffix="_compiled").path
                 assert output.exists(), f"Failed to compile {test_file_name}"
                 assert output.suffix == ".pdf"
                 assert output.stat().st_size > 0
@@ -217,7 +217,7 @@ Data 1 & Data 2 & Data 3 \\
 
         compiler = TabWrap(mode=CompilerMode.CLI)
         # Should compile successfully with auto-detected packages
-        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out", keep_tex=True)
+        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out", keep_tex=True).path
 
         assert output.exists()
 
@@ -248,7 +248,7 @@ Data & More & Info \\
         """)
 
         compiler = TabWrap(mode=CompilerMode.CLI)
-        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out")
+        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out").path
 
         assert output.exists()
 
@@ -269,6 +269,6 @@ Other & 300 & 400 \\
         """)
 
         compiler = TabWrap(mode=CompilerMode.CLI)
-        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out")
+        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out").path
 
         assert output.exists()

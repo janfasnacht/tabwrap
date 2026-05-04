@@ -3,6 +3,7 @@
 
 import pytest
 
+from tabwrap import CompileResult, Format
 from tabwrap.core import TabWrap
 from tabwrap.latex import FileValidationError
 
@@ -31,16 +32,32 @@ def sample_tex_file(temp_dir):
 
 def test_basic_compilation(temp_dir, sample_tex_file):
     compiler = TabWrap()
-    output = compiler.compile_tex(input_path=sample_tex_file, output_dir=temp_dir)
-    assert output.exists()
+    result = compiler.compile_tex(input_path=sample_tex_file, output_dir=temp_dir)
+    assert isinstance(result, CompileResult)
+    assert result.artifacts[Format.PDF].exists()
     assert (temp_dir / "test_table_compiled.pdf").exists()
+    assert result.page_counts[Format.PDF] >= 1
+    assert "pdflatex" in result.timings
 
 
 def test_png_output(temp_dir, sample_tex_file):
     compiler = TabWrap()
-    output = compiler.compile_tex(input_path=sample_tex_file, output_dir=temp_dir, png=True)
-    assert output.exists()
+    result = compiler.compile_tex(input_path=sample_tex_file, output_dir=temp_dir, png=True)
+    assert result.artifacts[Format.PNG].exists()
     assert (temp_dir / "test_table_compiled.png").exists()
+    assert Format.PDF not in result.artifacts
+
+
+def test_multi_format_returns_all_artifacts(temp_dir, sample_tex_file):
+    compiler = TabWrap()
+    result = compiler.compile_tex(
+        input_path=sample_tex_file,
+        output_dir=temp_dir,
+        formats={Format.PDF, Format.PNG},
+    )
+    assert result.artifacts[Format.PDF].exists()
+    assert result.artifacts[Format.PNG].exists()
+    assert "png_conversion" in result.timings
 
 
 def test_invalid_file():
@@ -69,8 +86,8 @@ def test_recursive_compilation(temp_dir):
 
     # Test recursive compilation
     compiler = TabWrap()
-    output = compiler.compile_tex(input_path=temp_dir, output_dir=temp_dir, recursive=True)
-    assert output.exists()
+    result = compiler.compile_tex(input_path=temp_dir, output_dir=temp_dir, recursive=True)
+    assert result.artifacts[Format.PDF].exists()
 
 
 def test_non_recursive_vs_recursive(temp_dir):
@@ -98,5 +115,5 @@ def test_non_recursive_vs_recursive(temp_dir):
         compiler.compile_tex(input_path=temp_dir, output_dir=temp_dir, recursive=False)
 
     # Recursive should succeed
-    output = compiler.compile_tex(input_path=temp_dir, output_dir=temp_dir, recursive=True)
-    assert output.exists()
+    result = compiler.compile_tex(input_path=temp_dir, output_dir=temp_dir, recursive=True)
+    assert result.artifacts[Format.PDF].exists()

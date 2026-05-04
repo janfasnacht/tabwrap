@@ -7,12 +7,21 @@ import fitz  # PyMuPDF
 import numpy as np
 from PIL import Image
 
+from ..exceptions import ConversionError, DependencyError
+
 logger = logging.getLogger(__name__)
 
 
-def convert_pdf_to_cropped_png(
-    pdf_path: Path, output_dir: Path, suffix: str = "", dpi: int = 300, padding: int = 10
-) -> Path | None:
+def get_pdf_page_count(pdf_path: Path) -> int:
+    """Return the number of pages in a PDF."""
+    doc = fitz.open(str(pdf_path))
+    try:
+        return len(doc)
+    finally:
+        doc.close()
+
+
+def convert_pdf_to_cropped_png(pdf_path: Path, output_dir: Path, suffix: str = "", dpi: int = 300, padding: int = 10) -> Path:
     """Convert PDF to cropped PNG with white space removal."""
     try:
         base_name = pdf_path.stem
@@ -25,15 +34,11 @@ def convert_pdf_to_cropped_png(
 
         doc = fitz.open(str(pdf_path))
         page = doc.load_page(0)
-        logger.info("PDF opened successfully")
 
         matrix = fitz.Matrix(dpi / 72, dpi / 72)
         pix = page.get_pixmap(matrix=matrix)
-        logger.info("Page rendered to pixmap")
 
         img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, pix.n)
-        logger.info(f"Image array shape: {img.shape}")
-        logger.info(f"Saving PNG to: {png_path}")
 
         mask = np.all(img < 250, axis=-1)
         coords = np.argwhere(mask)
@@ -52,48 +57,45 @@ def convert_pdf_to_cropped_png(
         cropped_img = img[y0:y1, x0:x1]
         pil_img = Image.fromarray(cropped_img)
         pil_img.save(str(png_path))
-        logger.info(f"PNG saved successfully: {png_path.exists()}")
 
         doc.close()
+
+        if not png_path.exists():
+            raise ConversionError(f"PNG file was not created: {png_path}")
+
         return png_path
 
+    except ConversionError:
+        raise
     except Exception as e:
         logger.error(f"Error converting PDF to PNG: {e}")
-        return None
+        raise ConversionError(f"PDF to PNG conversion failed: {e}") from e
 
 
-def convert_pdf_to_svg(pdf_path: Path, output_dir: Path, suffix: str = "") -> Path | None:
+def convert_pdf_to_svg(pdf_path: Path, output_dir: Path, suffix: str = "") -> Path:
     """Convert PDF to SVG using pdf2svg."""
+    base_name = pdf_path.stem
+    if suffix in base_name:
+        svg_path = output_dir / f"{base_name}.svg"
+    else:
+        svg_path = output_dir / f"{base_name}{suffix}.svg"
+
+    logger.info(f"Starting PDF to SVG conversion from: {pdf_path} to: {svg_path}")
+
     try:
-        base_name = pdf_path.stem
-        if suffix in base_name:
-            svg_path = output_dir / f"{base_name}.svg"
-        else:
-            svg_path = output_dir / f"{base_name}{suffix}.svg"
+        subprocess.run(["pdf2svg", "--help"], capture_output=True)
+    except FileNotFoundError as e:
+        raise DependencyError(
+            "pdf2svg not found. Install with: brew install pdf2svg (macOS) or sudo apt-get install pdf2svg (Ubuntu)"
+        ) from e
 
-        logger.info(f"Starting PDF to SVG conversion from: {pdf_path} to: {svg_path}")
-
-        # Check if pdf2svg is available
-        try:
-            subprocess.run(["pdf2svg", "--help"], capture_output=True)
-        except FileNotFoundError:
-            raise RuntimeError(
-                "pdf2svg not found. Install with: brew install pdf2svg (macOS) or sudo apt-get install pdf2svg (Ubuntu)"
-            )
-
-        # Convert PDF to SVG (first page only)
+    try:
         subprocess.run(["pdf2svg", str(pdf_path), str(svg_path), "1"], capture_output=True, text=True, check=True)
-
-        if svg_path.exists():
-            logger.info(f"SVG saved successfully: {svg_path}")
-            return svg_path
-        else:
-            logger.error("SVG file was not created")
-            return None
-
     except subprocess.CalledProcessError as e:
         logger.error(f"pdf2svg failed: {e.stderr}")
-        return None
-    except Exception as e:
-        logger.error(f"Error converting PDF to SVG: {e}")
-        return None
+        raise ConversionError(f"pdf2svg failed: {e.stderr.strip() or e}") from e
+
+    if not svg_path.exists():
+        raise ConversionError(f"SVG file was not created: {svg_path}")
+
+    return svg_path

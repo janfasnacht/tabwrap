@@ -3,9 +3,9 @@
 
 from .error_handling import (
     BatchCompilationResult,
-    CompilationError,
     CompilationResult,
     LaTeXErrorParser,
+    ParsedLatexError,
     check_latex_dependencies,
     format_dependency_report,
     validate_tex_content_syntax,
@@ -32,7 +32,7 @@ __all__ = [
     "check_latex_dependencies",
     "validate_tex_content_syntax",
     "format_dependency_report",
-    "CompilationError",
+    "ParsedLatexError",
     "CompilationResult",
     "BatchCompilationResult",
 ]

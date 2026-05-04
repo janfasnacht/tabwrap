@@ -128,7 +128,7 @@ B & 7.89 & 0.12 \\
         )
 
         compiler = TabWrap(mode=CompilerMode.CLI)
-        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out")
+        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out").path
 
         assert output.exists()
         assert output.suffix == ".pdf"
@@ -161,7 +161,7 @@ Control & -0.123 & (0.038) \\
         )
 
         compiler = TabWrap(mode=CompilerMode.CLI)
-        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out")
+        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out").path
 
         assert output.exists()
         assert output.suffix == ".pdf"
@@ -186,7 +186,7 @@ A & B & C \\
         )
 
         compiler = TabWrap(mode=CompilerMode.CLI)
-        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out", no_rescale=True)
+        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out", no_rescale=True).path
 
         assert output.exists()
         assert output.suffix == ".pdf"
@@ -215,7 +215,7 @@ A & 1 \\
         )
 
         compiler = TabWrap(mode=CompilerMode.CLI)
-        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out", png=True)
+        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out", png=True).path
 
         assert output.exists()
         assert output.suffix == ".png"
@@ -234,7 +234,7 @@ A & 1 \\
         for fixture_file in fixture_files:
             fixture_path = test_data_dir / fixture_file
             if fixture_path.exists():
-                output = compiler.compile_tex(fixture_path, tmp_path, suffix="_compiled")
+                output = compiler.compile_tex(fixture_path, tmp_path, suffix="_compiled").path
                 assert output.exists(), f"Failed to compile {fixture_file}"
                 assert output.suffix == ".pdf"
                 assert output.stat().st_size > 0
@@ -259,7 +259,7 @@ A & B & C \\
         )
 
         compiler = TabWrap(mode=CompilerMode.CLI)
-        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out")
+        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out").path
 
         assert output.exists()
         assert output.suffix == ".pdf"
@@ -286,7 +286,7 @@ X & 1 \\
         )
 
         compiler = TabWrap(mode=CompilerMode.CLI)
-        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out")
+        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out").path
 
         assert output.exists()
         assert output.suffix == ".pdf"
@@ -309,7 +309,7 @@ A & B & C \\
         )
 
         compiler = TabWrap(mode=CompilerMode.CLI)
-        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out")
+        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out").path
 
         assert output.exists()
         assert output.suffix == ".pdf"
@@ -338,7 +338,7 @@ A & B \\
         )
 
         compiler = TabWrap(mode=CompilerMode.CLI)
-        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out")
+        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out").path
 
         assert output.exists()
 
@@ -361,7 +361,7 @@ A & B \\
         )
 
         compiler = TabWrap(mode=CompilerMode.CLI)
-        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out")
+        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out").path
 
         assert output.exists()
 
@@ -386,6 +386,6 @@ A & B \\
         )
 
         compiler = TabWrap(mode=CompilerMode.CLI)
-        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out")
+        output = compiler.compile_tex(tex_file, tmp_path, suffix="_out").path
 
         assert output.exists()

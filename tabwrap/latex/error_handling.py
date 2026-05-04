@@ -1,12 +1,18 @@
 # tabwrap/utils/error_handling.py
+from __future__ import annotations
+
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..result import CompileResult
 
 
 @dataclass
-class CompilationError:
-    """Structured compilation error information."""
+class ParsedLatexError:
+    """Structured information for a single error parsed from a pdflatex log."""
 
     file: Path
     line_number: int | None
@@ -17,12 +23,25 @@ class CompilationError:
 
 @dataclass
 class CompilationResult:
-    """Result of compiling a single file."""
+    """Result of compiling a single file in a batch.
+
+    Wraps the per-file CompileResult plus success/error metadata so the batch
+    machinery can aggregate outcomes. `output_path` is preserved as a thin
+    property for code paths that still expect a single Path.
+    """
 
     file: Path
     success: bool
-    output_path: Path | None = None
+    result: CompileResult | None = None
     error: Exception | None = None
+
+    @property
+    def output_path(self) -> Path | None:
+        if self.result is None or not self.result.artifacts:
+            return None
+        from ..result import Format as _Format
+
+        return self.result.artifacts.get(_Format.PDF) or next(iter(self.result.artifacts.values()))
 
 
 @dataclass
@@ -79,8 +98,19 @@ class LaTeXErrorParser:
         },
     }
 
+    WARNING_PATTERNS: dict[str, str] = {
+        "overfull_hbox": r"Overfull \\hbox \([^)]*\)[^\n]*",
+        "underfull_hbox": r"Underfull \\hbox \([^)]*\)[^\n]*",
+        "overfull_vbox": r"Overfull \\vbox \([^)]*\)[^\n]*",
+        "underfull_vbox": r"Underfull \\vbox \([^)]*\)[^\n]*",
+        "font_warning": r"LaTeX Font Warning: [^\n]+",
+        "reference_undefined": r"LaTeX Warning: Reference [^\n]+ undefined[^\n]*",
+        "citation_undefined": r"LaTeX Warning: Citation [^\n]+ undefined[^\n]*",
+        "package_warning": r"Package [\w]+ Warning: [^\n]+",
+    }
+
     @classmethod
-    def parse_latex_log(cls, log_content: str, tex_file: Path) -> list[CompilationError]:
+    def parse_latex_log(cls, log_content: str, tex_file: Path) -> list[ParsedLatexError]:
         """Parse LaTeX log and extract structured error information."""
         errors = []
 
@@ -102,7 +132,7 @@ class LaTeXErrorParser:
                     suggestion = suggestion_template
 
                 errors.append(
-                    CompilationError(
+                    ParsedLatexError(
                         file=tex_file,
                         line_number=line_number,
                         error_type=error_type,
@@ -114,7 +144,23 @@ class LaTeXErrorParser:
         return errors
 
     @classmethod
-    def format_error_report(cls, errors: list[CompilationError]) -> str:
+    def parse_latex_warnings(cls, log_content: str) -> list[str]:
+        """Extract human-readable warning messages from a pdflatex log.
+
+        Returns deduplicated, trimmed strings — one entry per distinct warning.
+        """
+        seen: set[str] = set()
+        warnings: list[str] = []
+        for pattern in cls.WARNING_PATTERNS.values():
+            for match in re.finditer(pattern, log_content):
+                msg = match.group(0).strip()
+                if msg and msg not in seen:
+                    seen.add(msg)
+                    warnings.append(msg)
+        return warnings
+
+    @classmethod
+    def format_error_report(cls, errors: list[ParsedLatexError]) -> str:
         """Format errors into user-friendly report."""
         if not errors:
             return "Compilation failed with unknown error."
