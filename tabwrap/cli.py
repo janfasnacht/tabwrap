@@ -17,8 +17,8 @@ from .result import Format, resolve_formats
 @click.option("-o", "--output", type=click.Path(), default=".", help="Output directory (default: current directory)")
 @click.option("--suffix", default="_compiled", help="Output filename suffix (default: '_compiled')")
 @click.option("--packages", default="", help="Comma-separated LaTeX packages (auto-detected if empty)")
-@click.option("--landscape", is_flag=True, help="Use landscape orientation")
-@click.option("--no-resize", is_flag=True, help="Disable automatic table resizing")
+@click.option("--landscape", is_flag=True, help="[Deprecated, no-op] Output is auto-fit by the standalone document class")
+@click.option("--no-resize", is_flag=True, help="[Deprecated, no-op] Output is auto-fit by the standalone document class")
 @click.option("--header", is_flag=True, help="Show filename as header in output")
 @click.option("--keep-tex", is_flag=True, help="Keep generated LaTeX files and compilation logs for debugging")
 @click.option(

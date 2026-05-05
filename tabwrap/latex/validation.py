@@ -1,5 +1,6 @@
 # tex_compiler/utils/validation.py
 import os
+import re
 from pathlib import Path
 
 from ..exceptions import InvalidLatexError
@@ -52,6 +53,14 @@ def validate_output_dir(dir_path: str | Path) -> Path:
     return path
 
 
+_COMMENT_RE = re.compile(r"(?<!\\)%.*$", re.MULTILINE)
+
+
+def _strip_latex_comments(content: str) -> str:
+    """Drop LaTeX line comments so validators don't count tags inside them."""
+    return _COMMENT_RE.sub("", content)
+
+
 def is_valid_tabular_content(content: str) -> tuple[bool, str]:
     """
     Check if content appears to be a valid LaTeX table environment.
@@ -66,6 +75,10 @@ def is_valid_tabular_content(content: str) -> tuple[bool, str]:
     """
     if not content.strip():
         return False, "Empty content"
+
+    # Strip comments so a stray `% \end{tabular}` doesn't fool the begin/end
+    # tag counts below.
+    content = _strip_latex_comments(content)
 
     # Check which table environments are present
     has_tabular = "\\begin{tabular}" in content

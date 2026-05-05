@@ -74,6 +74,9 @@ class TabWrap:
         *,
         suffix: str = "_compiled",
         packages: str = "",
+        # `landscape` and `no_rescale` are deprecated no-ops kept for backwards
+        # compatibility with shell scripts, API form payloads, and the web UI
+        # in the tabwrap-web repo. Remove in 2.0.
         landscape: bool = False,
         no_rescale: bool = False,
         show_filename: bool = False,
@@ -94,6 +97,9 @@ class TabWrap:
         """
         if (png or svg) and formats:
             logger.warning("png/svg flags ignored because explicit formats were provided")
+        if landscape or no_rescale:
+            ignored = ", ".join(name for name, on in (("landscape", landscape), ("no_rescale", no_rescale)) if on)
+            logger.warning(f"{ignored} option(s) ignored: the standalone document class auto-fits content")
         resolved_formats = resolve_formats(formats, png=png, svg=svg)
         needs_image_convert = bool(resolved_formats & {Format.PNG})
         self.check_dependencies(require_convert=needs_image_convert)
@@ -272,38 +278,19 @@ class TabWrap:
         user_packages = [f"\\usepackage{{{pkg}}}" for pkg in options.get("packages", "").split(",") if pkg]
         all_packages = "\n".join(user_packages) + "\n" + "\n".join(detected_packages)
 
-        has_longtable = "\\begin{longtable}" in content
-        has_table = "\\begin{table}" in content
-
-        if not options.get("no_rescale"):
-            all_packages += "\n\\usepackage{graphicx}"
-            if not has_longtable and not has_table:
-                content = r"\resizebox{\linewidth}{!}{" + content + "}"
-
         underscore_package = ""
         if options.get("show_filename") and "_" in tex_file.name:
             underscore_package = "\\usepackage{underscore}  % Handle underscores in filenames"
 
         header = ""
         if options.get("show_filename"):
-            header = r"\texttt{" + clean_filename_for_display(tex_file.name) + r"}"
-        pagestyle = "plain" if options.get("combine_pdf") else "empty"
-
-        geometry_options = ["margin=1cm"]
-        if options.get("landscape"):
-            geometry_options.append("landscape")
-        geometry_package = f"\\usepackage[{','.join(geometry_options)}]{{geometry}}"
-
-        if not has_longtable and not has_table:
-            content = r"\begin{center}" + "\n" + content + "\n" + r"\end{center}"
+            header = r"\texttt{" + clean_filename_for_display(tex_file.name) + r"}\par\medskip"
 
         prepared = TexTemplates.SINGLE_TABLE.format(
             packages=all_packages,
             underscore=underscore_package,
-            geometry=geometry_package,
             header=header,
             content=content,
-            pagestyle=pagestyle,
         )
         return prepared, detected_packages
 

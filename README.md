@@ -26,11 +26,10 @@ Intercept & 1.23 & 0.045 \\
 And automatically wraps them into complete, compilable LaTeX documents with:
 - Auto-detected packages (booktabs, tabularx, siunitx, etc.)
 - Proper document structure and preambles
-- Smart table resizing to fit pages
+- Auto-fit page sized to the table
 - Multi-file batch processing with error recovery
 - Combined PDFs with table of contents
 - PNG output with automatic cropping, SVG support
-- Landscape orientation and custom formatting
 - Enhanced error reporting with suggestions
 
 ## Quick Start
@@ -74,8 +73,8 @@ tabwrap regression_table.tex
 # Process all tables in a folder
 tabwrap ./results_tables/
 
-# Output PNG with landscape orientation
-tabwrap table.tex -p --landscape
+# Output PNG
+tabwrap table.tex -p
 
 # Batch process with combined PDF
 tabwrap ./tables/ -r -c    # recursive + combine PDFs
@@ -121,8 +120,6 @@ tabwrap folder/ -j                    # Parallel processing (4-6x faster)
 tabwrap folder/ -c                    # Combine into single PDF with TOC
 
 # Layout and formatting
-tabwrap table.tex --landscape         # Landscape orientation
-tabwrap table.tex --no-resize         # Disable auto-resizing
 tabwrap table.tex --header            # Show filename as header
 ```
 
@@ -162,8 +159,6 @@ Processing Options:
   -c, --combine            Combine multiple PDFs with table of contents
 
 Formatting Options:
-  --landscape              Use landscape orientation
-  --no-resize              Disable automatic table resizing
   --header                 Show filename as header in output
   --packages TEXT          Comma-separated LaTeX packages (auto-detected if empty)
 
@@ -188,8 +183,6 @@ tabwrap folder/ -j                    # Parallel processing (faster)
 tabwrap folder/ -c                    # Combined PDF with TOC
 
 # Formatting options
-tabwrap table.tex --landscape         # Landscape orientation
-tabwrap table.tex --no-resize         # No auto-resizing
 tabwrap table.tex --header            # Show filename header
 
 # Output control
@@ -210,7 +203,6 @@ result = compiler.compile_tex(
     input_path="table.tex",
     output_dir="output/",
     png=True,
-    landscape=True
 )
 print(f"Compiled to: {result}")
 ```
@@ -245,7 +237,7 @@ esttab using "regression_results.tex", replace booktabs
 library(xtable)
 xtable(model) %>%
   print(file = "model_table.tex", include.rownames = FALSE)
-system("tabwrap model_table.tex --landscape")
+system("tabwrap model_table.tex")
 ```
 
 ### Python

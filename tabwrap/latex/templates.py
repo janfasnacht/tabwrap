@@ -5,13 +5,14 @@
 class TexTemplates:
     """Collection of LaTeX templates and document structures."""
 
-    # Template for single table compilation
+    # Template for single table compilation. The standalone class with
+    # `varwidth` auto-fits the page to the table — no fixed paper size,
+    # so tall tables don't overflow and small tables don't leave whitespace
+    # for the downstream PNG/SVG/embed pipeline to crop around.
     SINGLE_TABLE = r"""
-    \documentclass{{article}}
-    {geometry}
+    \documentclass[varwidth=\maxdimen,border=10pt]{{standalone}}
     {underscore}
     {packages}  % Inserted packages
-    \pagestyle{{{pagestyle}}}
     \begin{{document}}
     {header}
     {content}
