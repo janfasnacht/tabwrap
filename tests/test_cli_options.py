@@ -155,10 +155,12 @@ def test_option_combinations(runner, sample_tex, tmp_path):
     # Header with underscore package
     assert r"\texttt{test\_under\_score.tex}" in tex_content
     assert r"\usepackage{underscore}" in tex_content
-    # No resize
+    # No resize / landscape are now no-ops; the standalone document class
+    # auto-fits the page so neither resizebox wrapping nor a landscape
+    # geometry option should appear.
     assert r"\resizebox" not in tex_content
-    # Landscape
-    assert r"landscape" in tex_content
+    assert r"\documentclass[varwidth" in tex_content
+    assert r"landscape" not in tex_content
 
 
 def test_combine_single_file(runner, sample_tex, tmp_path):

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Single-table compiles use the `standalone` document class; pages auto-fit the table (#21).
+
+### Deprecated
+- `--landscape` and `--no-resize` (and API/Python equivalents) are no-ops; removal in 2.0.
+
+### Fixed
+- Tabular validation strips LaTeX comments before counting `\begin`/`\end` pairs.
+
 ## [1.4.0] - 2026-05-04
 
 ### Added

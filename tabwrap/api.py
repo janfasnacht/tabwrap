@@ -55,8 +55,8 @@ class HealthResponse(BaseModel):
 
 class CompileOptions(BaseModel):
     packages: str = Field("", description="Comma-separated LaTeX packages")
-    landscape: bool = Field(False, description="Use landscape orientation")
-    no_rescale: bool = Field(False, description="Disable automatic table resizing")
+    landscape: bool = Field(False, description="[Deprecated, no-op] Output is auto-fit by the standalone document class")
+    no_rescale: bool = Field(False, description="[Deprecated, no-op] Output is auto-fit by the standalone document class")
     show_filename: bool = Field(False, description="Show filename as header")
     formats: str = Field("", description="Comma-separated formats: pdf,png,svg. Defaults to pdf.")
     png: bool = Field(False, description="Alias: include png in formats")
@@ -124,8 +124,8 @@ def create_app():
         request: Request,
         file: UploadFile = File(..., description="LaTeX table file (.tex)"),
         packages: str = Form("", description="Comma-separated LaTeX packages"),
-        landscape: bool = Form(False, description="Use landscape orientation"),
-        no_rescale: bool = Form(False, description="Disable automatic table resizing"),
+        landscape: bool = Form(False, description="[Deprecated, no-op] Output is auto-fit by the standalone document class"),
+        no_rescale: bool = Form(False, description="[Deprecated, no-op] Output is auto-fit by the standalone document class"),
         show_filename: bool = Form(False, description="Show filename as header"),
         formats: str = Form("", description="Comma-separated formats: pdf,png,svg. Defaults to pdf."),
         png: bool = Form(False, description="Alias: include png in formats"),
