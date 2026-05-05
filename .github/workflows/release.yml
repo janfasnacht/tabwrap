@@ -5,6 +5,10 @@ on:
     tags:
       - 'v*.*.*'
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Backfill: build & push image with this version tag (e.g. 1.4.0). Skips PyPI/release.'
+        required: false
 
 permissions:
   contents: write
@@ -87,6 +91,7 @@ jobs:
           type=semver,pattern={{version}}
           type=semver,pattern={{major}}.{{minor}}
           type=raw,value=latest,enable=${{ github.ref_type == 'tag' }}
+          type=raw,value=${{ inputs.version }},enable=${{ inputs.version != '' }}
 
     - uses: docker/build-push-action@v6
       with:
