@@ -34,8 +34,10 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 
 WORKDIR /app
 
-# tabwrap is already installed into site-packages (copied above);
-# only the runtime config file needs to land in the working dir.
+# Application code. Required because ``poetry install --only-root``
+# in stage 1 produces an editable install — the .pth in site-packages
+# points back here, so the source must exist at this path at runtime.
+COPY tabwrap/ tabwrap/
 COPY gunicorn.conf.py .
 
 # Non-root user
