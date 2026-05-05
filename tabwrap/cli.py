@@ -17,6 +17,11 @@ from .result import Format, resolve_formats
 @click.option("-o", "--output", type=click.Path(), default=".", help="Output directory (default: current directory)")
 @click.option("--suffix", default="_compiled", help="Output filename suffix (default: '_compiled')")
 @click.option("--packages", default="", help="Comma-separated LaTeX packages (auto-detected if empty)")
+@click.option(
+    "--preamble",
+    default="",
+    help=r"Extra preamble lines (e.g. \newcommand definitions) inserted verbatim after \usepackage lines",
+)
 @click.option("--landscape", is_flag=True, help="[Deprecated, no-op] Output is auto-fit by the standalone document class")
 @click.option("--no-resize", is_flag=True, help="[Deprecated, no-op] Output is auto-fit by the standalone document class")
 @click.option("--header", is_flag=True, help="Show filename as header in output")
@@ -42,6 +47,7 @@ def main(
     output: str,
     suffix: str,
     packages: str,
+    preamble: str,
     landscape: bool,
     no_resize: bool,
     header: bool,
@@ -95,6 +101,7 @@ def main(
                 output_dir=output,
                 suffix=suffix,
                 packages=packages,
+                preamble=preamble,
                 landscape=landscape,
                 no_rescale=no_resize,
                 show_filename=header,

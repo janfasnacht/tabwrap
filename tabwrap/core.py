@@ -20,6 +20,7 @@ from .latex import (
     check_latex_dependencies,
     clean_filename_for_display,
     create_include_command,
+    detect_definitions,
     detect_packages,
     format_dependency_report,
     is_valid_tabular_content,
@@ -74,6 +75,7 @@ class TabWrap:
         *,
         suffix: str = "_compiled",
         packages: str = "",
+        preamble: str = "",
         # `landscape` and `no_rescale` are deprecated no-ops kept for backwards
         # compatibility with shell scripts, API form payloads, and the web UI
         # in the tabwrap-web repo. Remove in 2.0.
@@ -129,6 +131,7 @@ class TabWrap:
                 output_dir,
                 suffix=suffix,
                 packages=packages,
+                preamble=preamble,
                 landscape=landscape,
                 no_rescale=no_rescale,
                 show_filename=show_filename,
@@ -278,6 +281,14 @@ class TabWrap:
         user_packages = [f"\\usepackage{{{pkg}}}" for pkg in options.get("packages", "").split(",") if pkg]
         all_packages = "\n".join(user_packages) + "\n" + "\n".join(detected_packages)
 
+        detected_definitions = detect_definitions(content)
+        user_preamble = options.get("preamble", "") or ""
+        # User preamble runs first so a plain `\newcommand{\sym}{...}` overrides
+        # an auto-detected `\providecommand{\sym}` rule without forcing the user
+        # to remember `\renewcommand`.
+        preamble_parts = [p for p in (user_preamble, *detected_definitions) if p]
+        preamble_block = "\n".join(preamble_parts)
+
         underscore_package = ""
         if options.get("show_filename") and "_" in tex_file.name:
             underscore_package = "\\usepackage{underscore}  % Handle underscores in filenames"
@@ -288,6 +299,7 @@ class TabWrap:
 
         prepared = TexTemplates.SINGLE_TABLE.format(
             packages=all_packages,
+            preamble=preamble_block,
             underscore=underscore_package,
             header=header,
             content=content,

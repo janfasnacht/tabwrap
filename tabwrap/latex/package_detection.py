@@ -10,18 +10,33 @@ import re
 class PackageRule:
     """Represents a package detection rule."""
 
-    def __init__(self, package: str, patterns: list[str] | None = None, regex: re.Pattern | None = None):
+    def __init__(
+        self,
+        package: str | None = None,
+        patterns: list[str] | None = None,
+        regex: re.Pattern | None = None,
+        definition: str | None = None,
+    ):
         """
-        Initialize a package detection rule.
+        Initialize a detection rule.
+
+        At least one of `package` / `definition` must be set: a rule may inject a
+        `\\usepackage{...}` line, a verbatim preamble line (typically a
+        `\\newcommand`), or both.
 
         Args:
-            package: LaTeX package name (e.g., "siunitx")
-            patterns: List of literal strings to search for (e.g., ["\\num", "\\SI"])
-            regex: Compiled regex pattern for more complex detection
+            package: LaTeX package name (e.g., "siunitx").
+            patterns: List of literal strings to search for (e.g., ["\\num", "\\SI"]).
+            regex: Compiled regex pattern for more complex detection.
+            definition: Verbatim preamble line for commands that need a
+                `\\newcommand` rather than a package (e.g., esttab's `\\sym`).
         """
+        if package is None and definition is None:
+            raise ValueError("PackageRule requires at least one of `package` or `definition`")
         self.package = package
         self.patterns = patterns or []
         self.regex = regex
+        self.definition = definition
 
     def matches(self, content: str) -> bool:
         """
@@ -80,6 +95,14 @@ PACKAGE_RULES = [
     PackageRule("caption", patterns=["\\caption*", "\\captionof"]),
     # Special characters and fonts
     PackageRule("url", patterns=["\\url"]),
+    # esttab (Stata) emits \sym{**} for significance stars. Use \providecommand
+    # so we silently no-op if the user has their own \sym (e.g., from a
+    # copy-pasted preamble or via --preamble); pattern is \sym{ — the open
+    # brace — to avoid matching the kernel command \symbol.
+    PackageRule(
+        patterns=[r"\sym{"],
+        definition=r"\providecommand{\sym}[1]{\ifmmode^{#1}\else\textsuperscript{#1}\fi}",
+    ),
 ]
 
 
@@ -107,7 +130,18 @@ def detect_packages(tex_content: str) -> set[str]:
     packages = set()
 
     for rule in PACKAGE_RULES:
-        if rule.matches(tex_content):
+        if rule.package is not None and rule.matches(tex_content):
             packages.add(f"\\usepackage{{{rule.package}}}")
 
     return packages
+
+
+def detect_definitions(tex_content: str) -> list[str]:
+    """
+    Detect required preamble definitions (e.g., `\\newcommand` lines) based on content.
+
+    Mirrors :func:`detect_packages` but for rules carrying a `definition` rather
+    than (or in addition to) a package. Returns a sorted list for deterministic
+    ordering in the generated preamble.
+    """
+    return sorted({rule.definition for rule in PACKAGE_RULES if rule.definition is not None and rule.matches(tex_content)})

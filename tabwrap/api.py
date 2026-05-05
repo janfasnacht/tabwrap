@@ -55,6 +55,7 @@ class HealthResponse(BaseModel):
 
 class CompileOptions(BaseModel):
     packages: str = Field("", description="Comma-separated LaTeX packages")
+    preamble: str = Field("", description=r"Extra preamble lines inserted verbatim after \usepackage")
     landscape: bool = Field(False, description="[Deprecated, no-op] Output is auto-fit by the standalone document class")
     no_rescale: bool = Field(False, description="[Deprecated, no-op] Output is auto-fit by the standalone document class")
     show_filename: bool = Field(False, description="Show filename as header")
@@ -124,6 +125,7 @@ def create_app():
         request: Request,
         file: UploadFile = File(..., description="LaTeX table file (.tex)"),
         packages: str = Form("", description="Comma-separated LaTeX packages"),
+        preamble: str = Form("", description=r"Extra preamble lines inserted verbatim after \usepackage"),
         landscape: bool = Form(False, description="[Deprecated, no-op] Output is auto-fit by the standalone document class"),
         no_rescale: bool = Form(False, description="[Deprecated, no-op] Output is auto-fit by the standalone document class"),
         show_filename: bool = Form(False, description="Show filename as header"),
@@ -173,6 +175,7 @@ def create_app():
                             input_path=input_path,
                             output_dir=temp_dir,
                             packages=packages,
+                            preamble=preamble,
                             landscape=landscape,
                             no_rescale=no_rescale,
                             show_filename=show_filename,

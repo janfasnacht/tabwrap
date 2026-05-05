@@ -170,6 +170,33 @@ def test_packages_option(client, sample_tex, tmp_path):
     assert response.headers["content-type"] == "application/pdf"
 
 
+def test_preamble_option(client, tmp_path):
+    """Test --preamble form field is accepted and the resulting PDF compiles."""
+    tex_file = tmp_path / "with_foo.tex"
+    tex_file.write_text(
+        "\n".join(
+            [
+                r"\begin{tabular}{lc}",
+                r"\toprule",
+                r"A & \foo \\",
+                r"\bottomrule",
+                r"\end{tabular}",
+                "",
+            ]
+        )
+    )
+
+    with open(tex_file, "rb") as f:
+        response = client.post(
+            "/api/compile",
+            files={"file": ("with_foo.tex", f, "text/plain")},
+            data={"preamble": r"\newcommand{\foo}{FOO}"},
+        )
+
+    assert response.status_code == 200, response.text
+    assert response.headers["content-type"] == "application/pdf"
+
+
 def test_parallel_option(client, sample_tex, tmp_path):
     """Test parallel processing option."""
     tex_file = tmp_path / "test_table.tex"

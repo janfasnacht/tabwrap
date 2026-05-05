@@ -13,6 +13,7 @@ class TexTemplates:
     \documentclass[varwidth=\maxdimen,border=10pt]{{standalone}}
     {underscore}
     {packages}  % Inserted packages
+    {preamble}
     \begin{{document}}
     {header}
     {content}
