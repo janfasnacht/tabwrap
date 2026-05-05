@@ -1,6 +1,6 @@
 """Comprehensive tests for package detection, especially edge cases."""
 
-from tabwrap.latex.package_detection import detect_packages
+from tabwrap.latex.package_detection import detect_definitions, detect_packages
 
 
 class TestSiunitxDetection:
@@ -275,3 +275,62 @@ Variable & value \\
         packages = detect_packages(content)
         # lowercase 's' shouldn't trigger siunitx
         assert r"\usepackage{siunitx}" not in packages
+
+
+class TestNewcommandDefinitions:
+    """Test rules that inject preamble definitions instead of (or alongside) packages."""
+
+    SYM_DEFINITION = r"\providecommand{\sym}[1]{\ifmmode^{#1}\else\textsuperscript{#1}\fi}"
+
+    def test_sym_emits_definition_not_package(self):
+        """`\\sym{**}` from esttab needs a preamble definition, not a \\usepackage."""
+        content = r"""
+\begin{tabular}{lc}
+\toprule
+Var & Coef \\
+\midrule
+x & 1.23\sym{**} \\
+\bottomrule
+\end{tabular}
+"""
+        assert self.SYM_DEFINITION in detect_definitions(content)
+        # No \usepackage gets emitted for \sym (no esttab package on CTAN this targets).
+        assert not any("esttab" in pkg or "sym" in pkg for pkg in detect_packages(content))
+
+    def test_no_sym_no_definition(self):
+        """Plain table without \\sym should not pull in the \\sym definition."""
+        content = r"""
+\begin{tabular}{lc}
+\toprule
+A & B \\
+\bottomrule
+\end{tabular}
+"""
+        assert detect_definitions(content) == []
+
+    def test_symbol_does_not_false_match_sym(self):
+        """The kernel command \\symbol{65} must not trigger the \\sym rule."""
+        content = r"""
+\begin{tabular}{lc}
+\toprule
+Char & Code \\
+\midrule
+A & \symbol{65} \\
+\bottomrule
+\end{tabular}
+"""
+        assert detect_definitions(content) == []
+
+    def test_package_only_rules_skip_definitions(self):
+        """Booktabs etc. carry no `definition` and must not appear in detect_definitions output."""
+        content = r"""
+\begin{tabular}{lc}
+\toprule
+A & B \\
+\midrule
+C & D \\
+\bottomrule
+\end{tabular}
+"""
+        assert r"\usepackage{booktabs}" in detect_packages(content)
+        assert detect_definitions(content) == []

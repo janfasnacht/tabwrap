@@ -54,6 +54,30 @@ def test_custom_packages(runner, sample_tex, tmp_path):
     assert r"\usepackage{amssymb}" in tex_content
 
 
+def test_preamble_flag_passed_through(runner, tmp_path):
+    """--preamble should inject arbitrary preamble lines verbatim."""
+    tex_file = tmp_path / "with_foo.tex"
+    tex_file.write_text(
+        "\n".join(
+            [
+                r"\begin{tabular}{lc}",
+                r"\toprule",
+                r"A & \foo \\",
+                r"\bottomrule",
+                r"\end{tabular}",
+                "",
+            ]
+        )
+    )
+    result = runner.invoke(
+        main,
+        [str(tex_file), "-o", str(tmp_path), "--preamble", r"\newcommand{\foo}{FOO}", "--keep-tex"],
+    )
+    assert result.exit_code == 0, result.output
+    compiled = (tmp_path / "with_foo_compiled.tex").read_text()
+    assert r"\newcommand{\foo}{FOO}" in compiled
+
+
 def test_no_resize_option(runner, sample_tex, tmp_path):
     """Test --no-resize option disables automatic resizing."""
     result = runner.invoke(main, [str(sample_tex), "-o", str(tmp_path), "--no-resize", "--keep-tex"])

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Auto-inject `\newcommand` definitions for non-package macros; built-in rule for `\sym` (esttab significance stars) (#22).
+- `--preamble` flag (CLI / API / Python `compile_tex()`) for arbitrary preamble lines outside the curated rule set (#22).
+
 ### Changed
 - Single-table compiles use the `standalone` document class; pages auto-fit the table (#21).
 

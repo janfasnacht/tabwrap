@@ -106,6 +106,11 @@ Automatically detects and includes required packages:
 - `multirow` for \\multirow
 - And many more...
 
+For commands that need a `\newcommand` rather than a package, tabwrap injects
+the definition directly. For example, `\sym{**}` from Stata's `esttab` gets a
+matching `\newcommand{\sym}` in the preamble. Use `--preamble` for arbitrary
+preamble lines outside the curated rule set.
+
 ### Flexible Output Options
 
 ```bash
@@ -161,6 +166,7 @@ Processing Options:
 Formatting Options:
   --header                 Show filename as header in output
   --packages TEXT          Comma-separated LaTeX packages (auto-detected if empty)
+  --preamble TEXT          Extra preamble lines (e.g. \newcommand) inserted verbatim after \usepackage
 
 Advanced Options:
   --keep-tex               Keep generated LaTeX files and compilation logs for debugging
@@ -184,6 +190,7 @@ tabwrap folder/ -c                    # Combined PDF with TOC
 
 # Formatting options
 tabwrap table.tex --header            # Show filename header
+tabwrap table.tex --preamble '\newcommand{\sig}[1]{\textbf{#1}}'  # Inject preamble lines (e.g. custom \newcommand)
 
 # Output control
 tabwrap table.tex -o output/          # Custom output directory
