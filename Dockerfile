@@ -5,8 +5,13 @@ RUN pip install --no-cache-dir poetry \
     && poetry config virtualenvs.create false
 
 WORKDIR /app
-COPY pyproject.toml poetry.lock ./
+COPY pyproject.toml poetry.lock README.md ./
 RUN poetry install --no-interaction --no-ansi --extras api --without dev --no-root
+
+# Install tabwrap itself so importlib.metadata can resolve the version
+# at runtime. Separate layer keeps the heavy dep-install above cacheable.
+COPY tabwrap/ tabwrap/
+RUN poetry install --no-interaction --no-ansi --only-root
 
 # --- Stage 2: runtime image with TeX + system deps ---
 FROM python:3.12-slim
@@ -29,8 +34,8 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 
 WORKDIR /app
 
-# Application code
-COPY tabwrap/ tabwrap/
+# tabwrap is already installed into site-packages (copied above);
+# only the runtime config file needs to land in the working dir.
 COPY gunicorn.conf.py .
 
 # Non-root user

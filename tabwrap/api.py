@@ -19,7 +19,10 @@ try:
 
     __version__ = get_version("tabwrap")
 except Exception:
-    __version__ = "1.1.0"  # Fallback version
+    # Loud sentinel so a broken build (e.g. package metadata missing
+    # from the image) is obvious in the /api/health response instead
+    # of silently reporting a stale hardcoded version.
+    __version__ = "unknown"
 
 import os as _os
 

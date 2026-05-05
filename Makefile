@@ -1,6 +1,6 @@
 # Makefile for tabwrap development tasks
 
-.PHONY: help test test-verbose test-coverage clean lint format type-check install dev-install build publish
+.PHONY: help test test-verbose test-coverage clean lint format type-check install dev-install build publish release
 
 # Default target
 help:
@@ -18,6 +18,7 @@ help:
 	@echo "  build          - Build distribution packages"
 	@echo "  publish        - Publish to PyPI"
 	@echo "  check-deps     - Check for outdated dependencies"
+	@echo "  release        - Bump version, commit, tag (push manually). Usage: make release VERSION=1.4.1"
 
 # Test commands
 test:
@@ -57,6 +58,19 @@ build:
 
 publish:
 	poetry publish
+
+# Bump version in pyproject, commit, and tag. Push is manual so the
+# diff can be reviewed before CI fires (PyPI publish + GHCR build).
+# Usage: make release VERSION=1.4.1
+release:
+	@test -n "$(VERSION)" || (echo "Usage: make release VERSION=x.y.z"; exit 1)
+	poetry version $(VERSION)
+	git add pyproject.toml
+	git commit -m "Release v$(VERSION)"
+	git tag v$(VERSION)
+	@echo
+	@echo "Tagged v$(VERSION). Push with:"
+	@echo "  git push origin main && git push origin v$(VERSION)"
 
 # Maintenance
 clean:
