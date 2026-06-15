@@ -1,6 +1,6 @@
 [project]
 name = "tabwrap"
-version = "1.4.2"
+version = "1.5.0"
 description = "Wrap LaTeX table fragments into complete documents for research workflows"
 readme = "README.md"
 requires-python = ">=3.10"

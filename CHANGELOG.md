@@ -7,12 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-06-15
+
 ### Added
 - Auto-inject `\newcommand` definitions for non-package macros; built-in rule for `\sym` (esttab significance stars) (#22).
 - `--preamble` flag (CLI / API / Python `compile_tex()`) for arbitrary preamble lines outside the curated rule set (#22).
 
 ### Changed
 - Single-table compiles use the `standalone` document class; pages auto-fit the table (#21).
+- PNG crop is now handled entirely by PyMuPDF clip-based re-render; Pillow is no longer a dependency.
+- Build tooling migrated from Poetry to uv; lockfile is now `uv.lock` (#27).
+
+### Removed
+- Pillow dependency.
 
 ### Deprecated
 - `--landscape` and `--no-resize` (and API/Python equivalents) are no-ops; removal in 2.0.
