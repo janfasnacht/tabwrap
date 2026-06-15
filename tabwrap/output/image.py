@@ -5,7 +5,6 @@ from pathlib import Path
 
 import fitz  # PyMuPDF
 import numpy as np
-from PIL import Image
 
 from ..exceptions import ConversionError, DependencyError
 
@@ -54,9 +53,9 @@ def convert_pdf_to_cropped_png(pdf_path: Path, output_dir: Path, suffix: str = "
         x1 = min(pix.width, x1 + padding)
         y1 = min(pix.height, y1 + padding)
 
-        cropped_img = img[y0:y1, x0:x1]
-        pil_img = Image.fromarray(cropped_img)
-        pil_img.save(str(png_path))
+        clip_rect = fitz.Rect(x0, y0, x1, y1) * ~matrix
+        cropped_pix = page.get_pixmap(matrix=matrix, clip=clip_rect)
+        cropped_pix.save(str(png_path))
 
         doc.close()
 
