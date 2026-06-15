@@ -35,7 +35,7 @@ jobs:
         poetry run ruff check tabwrap
         poetry run ruff format --check tabwrap
 
-  build-and-publish:
+  build:
     needs: test
     runs-on: ubuntu-latest
     if: github.ref_type == 'tag'
@@ -52,6 +52,65 @@ jobs:
 
     - name: Build package
       run: poetry build
+
+    - name: Upload dist artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist
+        path: dist/
+
+  install-smoke:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref_type == 'tag'
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
+    steps:
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        allow-prereleases: true
+
+    - name: Download dist artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: dist
+        path: dist/
+
+    - name: Install from wheel
+      run: |
+        python -m venv .venv
+        .venv/bin/pip install --upgrade pip
+        .venv/bin/pip install dist/*.whl
+
+    - name: Smoke test
+      run: |
+        .venv/bin/python -c "import tabwrap"
+        .venv/bin/tabwrap --version
+
+  build-and-publish:
+    needs: install-smoke
+    runs-on: ubuntu-latest
+    if: github.ref_type == 'tag'
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1.4.1
+
+    - name: Download dist artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: dist
+        path: dist/
 
     - name: Publish to PyPI
       env:
