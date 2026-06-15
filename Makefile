@@ -1,6 +1,6 @@
 # Makefile for tabwrap development tasks
 
-.PHONY: help test test-verbose test-coverage clean lint format type-check install dev-install build publish release
+.PHONY: help test test-verbose test-coverage clean lint format install dev-install build publish release
 
 # Default target
 help:
@@ -8,13 +8,11 @@ help:
 	@echo "  test           - Run all tests"
 	@echo "  test-verbose   - Run tests with verbose output"
 	@echo "  test-coverage  - Run tests with coverage report"
-	@echo "  test-watch     - Run tests in watch mode"
 	@echo "  lint           - Run linting checks"
-	@echo "  format         - Format code with black and isort"
-	@echo "  type-check     - Run type checking with mypy"
+	@echo "  format         - Format code with ruff"
 	@echo "  clean          - Clean up build artifacts and cache"
-	@echo "  install        - Install package in development mode"
-	@echo "  dev-install    - Install with dev dependencies"
+	@echo "  install        - Install package dependencies"
+	@echo "  dev-install    - Install with api extras (dev group always included)"
 	@echo "  build          - Build distribution packages"
 	@echo "  publish        - Publish to PyPI"
 	@echo "  check-deps     - Check for outdated dependencies"
@@ -22,49 +20,41 @@ help:
 
 # Test commands
 test:
-	poetry run pytest tests/ -x
+	uv run pytest tests/ -x
 
 test-verbose:
-	poetry run pytest tests/ -v -s
+	uv run pytest tests/ -v -s
 
 test-coverage:
-	poetry run pytest tests/ --cov=tabwrap --cov-report=html --cov-report=term
-
-test-watch:
-	poetry run pytest-watch tests/ -- -x
+	uv run pytest tests/ --cov=tabwrap --cov-report=html --cov-report=term
 
 # Code quality
 lint:
-	poetry run flake8 tabwrap tests
-	poetry run pylint tabwrap
+	uv run ruff check tabwrap tests
 
 format:
-	poetry run black tabwrap tests
-	poetry run isort tabwrap tests
-
-type-check:
-	poetry run mypy tabwrap
+	uv run ruff format tabwrap tests
 
 # Development setup
 install:
-	poetry install
+	uv sync
 
 dev-install:
-	poetry install --with dev
+	uv sync --extra api
 
 # Build and publish
 build:
-	poetry build
+	uv build
 
 publish:
-	poetry publish
+	uv publish
 
 # Bump version in pyproject, commit, and tag. Push is manual so the
 # diff can be reviewed before CI fires (PyPI publish + GHCR build).
 # Usage: make release VERSION=1.4.1
 release:
 	@test -n "$(VERSION)" || (echo "Usage: make release VERSION=x.y.z"; exit 1)
-	poetry version $(VERSION)
+	uv version $(VERSION)
 	git add pyproject.toml
 	git commit -m "Release v$(VERSION)"
 	git tag v$(VERSION)
@@ -85,7 +75,7 @@ clean:
 	rm -rf .mypy_cache/
 
 check-deps:
-	poetry show --outdated
+	uv pip list --outdated
 
 # LaTeX development helpers
 test-latex:
@@ -98,12 +88,12 @@ test-latex:
 info:
 	@echo "Project: tabwrap"
 	@echo "Python version: $(shell python --version)"
-	@echo "Poetry version: $(shell poetry --version)"
+	@echo "uv version: $(shell uv --version)"
 	@echo "Dependencies:"
-	@poetry show --tree
+	@uv tree
 
 # Quick development workflow
 dev: clean dev-install test lint
 
-# Full CI workflow  
-ci: clean dev-install test-coverage lint type-check
+# Full CI workflow
+ci: clean dev-install test-coverage lint

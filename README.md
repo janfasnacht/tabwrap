@@ -261,7 +261,7 @@ os.system("tabwrap data_summary.tex -p")
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature-name`
 3. Make changes and add tests
-4. Run tests: `poetry run pytest`
+4. Run tests: `uv run pytest`
 5. Submit a pull request
 
 ### Development Setup
@@ -269,15 +269,15 @@ os.system("tabwrap data_summary.tex -p")
 ```bash
 git clone https://github.com/janfasnacht/tabwrap.git
 cd tabwrap
-poetry install
-poetry run pytest  # Run tests
+uv sync --extra api
+uv run pytest  # Run tests
 ```
 
 ### Building and Testing
 
 ```bash
-poetry build                    # Build distribution packages
-poetry run tabwrap --help      # Test CLI
+uv build                       # Build distribution packages
+uv run tabwrap --help         # Test CLI
 make test                       # Run full test suite
 make test-coverage              # Generate coverage report
 ```
